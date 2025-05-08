@@ -3,6 +3,7 @@ import 'navigations/history.dart';
 import 'navigations/home.dart';
 import 'navigations/lessons.dart';
 import 'navigations/profile.dart';
+import 'navigations/google.dart';
 
 // Using AppConstants from previous code
 class AppConstants {
@@ -24,9 +25,10 @@ class _NavigationState extends State<Navigation> {
 
   static const List<Widget> _pages = [
     Home(),
-    Lessons(),
-    History(),
+    LoginPage(),
     Profile(),
+    History(),
+   
   ];
 
   @override

@@ -1,0 +1,239 @@
+Onboarding Flow for Path to Purity
+
+The recommended onboarding flow is Login -> Questionnaire -> Permission, with mandatory login that includes a “Continue as Guest” option. This ensures privacy for sensitive addiction-related data, simplifies data management, and balances user engagement with a low-friction guest mode. The flow is designed for a Flutter app with Riverpod for state management and Firebase for authentication and storage, aligning with Islamic values of modesty and support.
+
+Step 1: Login (Mandatory with Guest Option)
+
+
+
+
+
+Purpose: Authenticate the user to secure sensitive questionnaire data and provide a personalized experience, while offering a low-friction guest option to reduce barriers.
+
+
+
+Implementation:
+
+
+
+
+
+Offer login options:
+
+ "Continue as a guest"                             "Continue with Google",
+ 
+
+
+
+
+
+
+
+
+Standard Login: Email/password or Google Sign-In via Firebase Authentication.
+
+
+
+Continue as Guest: Creates a temporary anonymous account using Firebase Anonymous Authentication.
+
+
+
+UI: Welcoming screen with Islamic aesthetics (teal and white color scheme, clean design) and empathetic messaging (e.g., “Begin your journey to purity in a safe, private space”).
+
+
+
+Prompt: “Sign in or continue as a guest to start your personalized journey. Your data is secure and private.”
+
+
+
+If guest mode is selected, inform users: “Guest progress will be saved temporarily. Create an account later to keep your journey secure.”
+
+
+
+Store user ID (standard or anonymous) in Riverpod provider for session management.
+
+
+
+Why Mandatory?: Ensures all questionnaire responses are tied to a secure account (standard or anonymous), protecting sensitive data and simplifying backend syncing. Guest mode reduces the barrier of account creation while maintaining security.
+
+
+
+Why First?: Secures the session before collecting sensitive data, aligning with confidentiality needs for addiction recovery.
+
+Step 2: Questionnaire
+
+
+
+
+
+Purpose: Collect data on the user’s addiction frequency, triggers, and goals to tailor motivational content, milestones, and support.
+
+
+
+Implementation:
+
+
+
+
+
+Use the refined questionnaire (artifact_id: 1c8d90fe-24c8-4b0a-92fd-387e2e7a2804):
+
+
+
+
+
+How often do you find yourself struggling with this habit?
+
+
+
+
+
+Options: Challenging (1–3 times/week), Very Challenging (4–6 times/week), Extremely Challenging (7+ times/week)
+
+
+
+Purpose: Tailors milestone challenges (e.g., “7 days of clarity” for frequent struggles).
+
+
+
+What situations or emotions most often lead you to this habit?
+
+
+
+
+
+Options: Stress, Boredom, Loneliness, Anxiety, Other (free text)
+
+
+
+Purpose: Provides trigger-specific coping strategies (e.g., duas for stress).
+
+
+
+What is your initial goal for staying free from this habit?
+
+
+
+
+
+Options: 7 days, 30 days, 90 days, Other (free text)
+
+
+
+Purpose: Sets personalized milestones.
+
+
+
+How strong is your motivation to overcome this challenge?
+
+
+
+
+
+Options: Very motivated, Somewhat motivated, Unsure, Not very motivated
+
+
+
+Purpose: Adjusts content tone (e.g., extra encouragement for “Unsure”).
+
+
+
+Would you like reminders for daily prayers or Islamic reflections to support your journey?
+
+
+
+
+
+Options: Yes, No
+
+
+
+Purpose: Customizes spiritual content (e.g., prayer notifications).
+
+
+
+UI: Form with dropdowns and text fields, empathetic language (e.g., “We’re here to support your journey”), and progress indicator (e.g., “Step 2 of 3”).
+
+
+
+Store responses in Riverpod provider and sync to Firebase Firestore, linked to the user’s ID (standard or anonymous).
+
+
+
+Why Second?: Follows login to ensure data security and enables personalization before requesting permissions.
+
+Step 3: Permission
+
+
+
+
+
+Purpose: Request necessary permissions (e.g., notifications for prayer reminders) based on questionnaire responses.
+
+
+
+Implementation:
+
+
+
+
+
+Dynamically request permissions:
+
+
+
+
+
+If user selected “Yes” for prayer reminders, request notification permission using Flutter’s permission_handler package.
+
+
+
+Explain purpose (e.g., “Allow notifications for daily dua and prayer reminders”).
+
+
+
+UI: Simple screen with toggle switches and a “Complete Setup” button.
+
+
+
+For guest users, prompt to create a full account after permissions (e.g., “Sign up to save your progress permanently”).
+
+
+
+Example Prompt: “Enable notifications to stay motivated with daily Islamic reflections.”
+
+
+
+Why Last?: Permissions are tailored to questionnaire responses, making requests relevant and reducing friction.
+
+Post-Onboarding: Home Screen and Guest Conversion
+
+
+
+
+
+Home Screen: After permissions, navigate to the home screen (as in main.dart, artifact_id: b62ae87c-1b3d-4154-b52e-247f066b9301), displaying personalized content (e.g., daily duas, progress tracking) based on questionnaire data.
+
+
+
+Guest Conversion: For guest users, periodically prompt to create a full account (e.g., after a milestone or when accessing certain features) to ensure long-term data persistence. Example: “Sign up to keep your progress safe and access all features.”
+
+Why This Approach?
+
+
+
+
+
+Privacy: Mandatory login (with guest option) secures sensitive data from the start, critical for addiction recovery and aligned with Islamic confidentiality.
+
+
+
+Engagement: Guest mode lowers the initial barrier, encouraging users to start the questionnaire while still tying data to a temporary account.
+
+
+
+Simplicity: Avoids complex local storage and syncing issues of fully optional login, streamlining development with Firebase.
+
+
+
+User Trust: Combines security (mandatory login) with flexibility (guest option), fostering a supportive, non-judgmental experience.

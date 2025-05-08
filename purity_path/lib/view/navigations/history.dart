@@ -26,7 +26,7 @@ class _HistoryScreenState extends State<History> with AutomaticKeepAliveClientMi
     super.initState();
     _loadHistory();
   }
-  
+
   Future<void> _loadHistory() async {
     final prefs = await SharedPreferences.getInstance();
     final history = prefs.getStringList('relapseHistory') ?? [];
@@ -345,6 +345,7 @@ class _HistoryScreenState extends State<History> with AutomaticKeepAliveClientMi
                       ),
                 
                 const SizedBox(height: 20),
+
               ],
             ),
           ),

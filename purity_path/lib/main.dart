@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:purity_path/view/navigations/history.dart';
 import 'package:purity_path/view/navigations/lessons.dart';
+import 'package:purity_path/view/navigations/google.dart';
+import 'package:purity_path/view/navigations/profile.dart';
+import 'package:purity_path/view/navigations/questionnaire.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'dart:math';
@@ -23,7 +26,7 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Merriweather',
         scaffoldBackgroundColor: Colors.grey[50],
       ),
-      home: const MainScreen(),
+      home: const LoginPage(),
     );
   }
 }
@@ -40,8 +43,8 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
   
   final List<Widget> _screens = [
     const HomePage(),
-    const Lessons(),
-    const History(),
+    const LoginPage(),
+    const QuestionnaireIntroPage(),
   ];
 
   @override

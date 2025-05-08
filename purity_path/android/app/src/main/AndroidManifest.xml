@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="NoFap Islam"
+        android:label="N Islam"
         android:name="${applicationName}"
         android:icon="@mipmap/logo">
         <activity
