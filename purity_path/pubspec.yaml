@@ -1,0 +1,45 @@
+name: purity_path
+description: "A new Flutter project."
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  intl: ^0.20.2
+  flutter_riverpod: ^2.6.1
+  shared_preferences: ^2.5.3
+  fl_chart: ^0.71.0
+  flutter_hooks: ^0.21.2
+
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+
+  uses-material-design: true
+  assets:
+     - assets/images/
+     
+  fonts:
+     - family: Merriweather
+       fonts:
+         - asset: assets/fonts/Merriweather_24pt-Bold.ttf
+         - asset: assets/fonts/Merriweather_24pt-Italic.ttf
+         - asset: assets/fonts/Merriweather_24pt-Regular.ttf
+        
+     - family: CrimsonText
+       fonts:
+         - asset: assets/fonts/CrimsonText-Bold.ttf
+         - asset: assets/fonts/CrimsonText-Italic.ttf
+         - asset: assets/fonts/CrimsonText-Regular.ttf

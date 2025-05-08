@@ -1,0 +1,17 @@
+what to add to the app
+
+-Goal Setting
+-Add something to see for the relapse and be able to be seen in the history
+-Create an account
+-Multiple language
+-What is inactif must be shown for the carousel
+-And the shadow is useless
+-Notifications
+-Pop up for the relapse not an intent
+-On the dua/lesson the first card after the name make it visible
+-Offrir la possibilite de bloquer les x
+-Lorsque l'utilisateur veut relapse on lui donne des modifications
+-Un peu comme AppBlock
+-Ask about the addiction at the begining 
+-Personalize depending on the level of the addiction
+
