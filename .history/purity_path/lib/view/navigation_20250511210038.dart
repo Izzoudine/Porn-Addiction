@@ -3,7 +3,7 @@ import 'navigations/history.dart';
 import 'navigations/home.dart';
 import 'navigations/lessons.dart';
 import 'navigations/profile.dart';
-import 'navigations/welcome.dart';
+import 'navigations/google.dart';
 
 // Using AppConstants from previous code
 class AppConstants {

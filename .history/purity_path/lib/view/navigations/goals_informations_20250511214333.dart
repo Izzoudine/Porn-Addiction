@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:purity_path/utils/routes/routes_name.dart';
+import 'permissions.dart';
 class GoalsInformation extends StatefulWidget {
   final Map<String, dynamic> responses;
 
@@ -329,8 +329,8 @@ class _GoalsInformationState extends State<GoalsInformation> with SingleTickerPr
                         onPressed: () {
                           // Navigate to the main app
                           // This would typically go to your app's main dashboard
-                          Navigator.of(context).pushReplacementNamed(
-                            RoutesName.permissions
+                          Navigator.of(context).pushReplacement(
+                            ROutes
                           );
                         },
                         style: ElevatedButton.styleFrom(

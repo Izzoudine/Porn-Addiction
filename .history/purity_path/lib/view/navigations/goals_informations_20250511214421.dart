@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:purity_path/utils/routes/routes_name.dart';
+import 'permissions.dart';
 class GoalsInformation extends StatefulWidget {
   final Map<String, dynamic> responses;
 

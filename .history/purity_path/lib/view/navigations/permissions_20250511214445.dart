@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:purity_path/utils/routes/routes_name.dart';
 import '../../data/models/permission_model.dart';
+import 'accessibility_info.dart';
 
 class PermissionsScreen extends StatefulWidget {
   const PermissionsScreen({super.key});
@@ -85,7 +85,9 @@ class _PermissionsScreenState extends State<PermissionsScreen> with TickerProvid
       // Navigate to the accessibility info page
       Navigator.pushNamed(
         context,
-       RoutesName.accessibility
+        MaterialPageRoute(
+          builder: (context) => const AccessibilityInfoPage(),
+        ),
       );
       return;
     }

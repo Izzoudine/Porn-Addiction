@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:purity_path/view/navigations/history.dart';
+import 'package:purity_path/view/navigations/lessons.dart';
 import 'package:purity_path/view/navigations/welcome.dart';
 
 
