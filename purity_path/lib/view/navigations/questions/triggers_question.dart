@@ -63,7 +63,7 @@ class TriggersQuestion extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           border: Border.all(
-            color: isSelected ? const Color(0xFF2E7D32) : Colors.grey[300]!,
+            color: isSelected ? const Color(0xFF7EB7FF) : Colors.grey[300]!,
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
@@ -77,10 +77,10 @@ class TriggersQuestion extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? const Color(0xFF2E7D32) : Colors.grey[400]!,
+                  color: isSelected ? const Color(0xFF7EB7FF) : Colors.grey[400]!,
                   width: 2,
                 ),
-                color: isSelected ? const Color(0xFF2E7D32) : Colors.white,
+                color: isSelected ? const Color(0xFF7EB7FF) : Colors.white,
               ),
               child: isSelected
                   ? const Icon(
@@ -97,7 +97,7 @@ class TriggersQuestion extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? const Color(0xFF2E7D32) : Colors.black87,
+                  color: isSelected ? const Color(0xFF7EB7FF) : Colors.black87,
                 ),
               ),
             ),

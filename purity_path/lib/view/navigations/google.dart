@@ -124,7 +124,7 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 16),
 
                 // Purpose of the app
-   /*             const Padding(
+                /*             const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 12),
                   child: Text(
                     'Your companion on the journey to purity and spiritual growth through Islamic principles',
@@ -154,26 +154,32 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
 
-                      // App icons in background (simulated)
+                      // App icons with different colors
                       Positioned(
                         top: 40,
                         left: 70,
-                        child: _buildAppIcon(Colors.blue.shade300, 60),
+                        child: _buildAppIcon(Colors.green.shade300, 60), // Blue
                       ),
                       Positioned(
                         bottom: 50,
                         right: 60,
-                        child: _buildAppIcon(Colors.blue.shade400, 70),
+                        child: _buildAppIcon(
+                          Colors.orange.shade300,
+                          70,
+                        ), // Green
                       ),
                       Positioned(
                         bottom: 80,
                         left: 50,
-                        child: _buildAppIcon(Colors.lightBlue.shade200, 65),
+                        child: _buildAppIcon(Colors.red.shade300, 65), // Red
                       ),
                       Positioned(
                         top: 70,
                         right: 50,
-                        child: _buildAppIcon(Colors.blue.shade200, 55),
+                        child: _buildAppIcon(
+                          Colors.purple.shade300,
+                          55,
+                        ), // Violet
                       ),
 
                       // Tagline in the middle of the illustration
@@ -214,7 +220,7 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             )
                             : const Text(
-                              "Continue as google",
+                              "Continue with Google",
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
@@ -229,7 +235,7 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: () {
                     // Handle existing user login
                     //   _signInWithGoogle();
-                 Navigator.push(
+                    Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => QuestionnaireIntroPage(),

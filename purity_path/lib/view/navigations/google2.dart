@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'questionnaire_manager.dart';
 
-
 class QuestionnaireIntroPage extends StatelessWidget {
   const QuestionnaireIntroPage({Key? key}) : super(key: key);
 
@@ -132,10 +131,12 @@ class QuestionnaireIntroPage extends StatelessWidget {
                               );
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2196F3),
+                              backgroundColor: Colors.blue.shade400,
                               foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
+                                borderRadius: BorderRadius.circular(8),
                               ),
                               elevation: 0,
                             ),
@@ -143,13 +144,12 @@ class QuestionnaireIntroPage extends StatelessWidget {
                               'Continue',
                               style: TextStyle(
                                 fontSize: 18,
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 56),
                       ],
                     ),
                   ),
@@ -169,7 +169,7 @@ class WavePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint =
         Paint()
-          ..color = const Color(0xFF2196F3)
+          ..color = const Color(0xFF3FA9FF)
           ..style = PaintingStyle.fill;
 
     final path = Path();
