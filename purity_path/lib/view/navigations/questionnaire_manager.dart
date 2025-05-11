@@ -77,7 +77,7 @@ class _QuestionnaireManagerState extends State<QuestionnaireManager> {
                   LinearProgressIndicator(
                     value: (_currentPage + 1) / _totalPages,
                     backgroundColor: Colors.grey[200],
-                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2E7D32)),
+                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF7EB7FF)),
                     minHeight: 8,
                     borderRadius: BorderRadius.circular(4),
                   ),

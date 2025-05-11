@@ -22,7 +22,6 @@ class MyApp extends StatelessWidget {
       title: 'Purity Path',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.teal,
         fontFamily: 'Merriweather',
         scaffoldBackgroundColor: Colors.grey[50],
       ),
@@ -68,7 +67,7 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
           ),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.teal,
+        selectedItemColor: Color(0xFF7EB7FF),
         onTap: (index) {
           setState(() {
             _selectedIndex = index;

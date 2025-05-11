@@ -32,7 +32,7 @@ class QuestionLayout extends StatelessWidget {
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF2E7D32),
+              color: Color.fromARGB(255, 74, 153, 248),
             ),
           ),
           const SizedBox(height: 8),
@@ -75,7 +75,7 @@ class QuestionLayout extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: canProceed ? onNext : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2196F3),
+                    backgroundColor: const Color(0xFF7EB7FF),
                     foregroundColor: Colors.white,
                     disabledBackgroundColor: Colors.grey[300],
                     disabledForegroundColor: Colors.grey[600],
