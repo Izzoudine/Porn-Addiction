@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:purity_path/utils/consts.dart';
 import 'package:purity_path/utils/routes/routes_name.dart';
 
 class QuestionnaireIntroPage extends StatelessWidget {
@@ -167,7 +168,7 @@ class WavePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint =
         Paint()
-          ..color = const Color(0xFF3FA9FF)
+          ..color = const Color(AppColors.primary)
           ..style = PaintingStyle.fill;
 
     final path = Path();

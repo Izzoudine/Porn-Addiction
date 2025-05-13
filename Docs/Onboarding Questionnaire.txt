@@ -45,6 +45,22 @@ Purpose: Customizes spiritual content, such as prayer time notifications or dail
 7-Propose a plan
 8-This is what'll happen
 
+Main/Stric
+
+9-Home page 
+10-Strict Mode
+11-
+12-Profile
+13-Lessons
+
+History/Statistics on Profile
+
+Home page
+Objectifs going on 
+Lessons
+Profile
+
+Now 
 for the first and second page use the right green color and ok
 
 08/05/25-09/05/25

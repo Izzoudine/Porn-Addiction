@@ -32,7 +32,7 @@ class AppPages {
       case RoutesName.questionnaireManager:
         return MaterialPageRoute(builder: (_) => QuestionnaireManager());
       default:
-        return MaterialPageRoute(builder: (_) => Navigation());
+        return MaterialPageRoute(builder: (_) => LoginPage());
     }
   }
 }

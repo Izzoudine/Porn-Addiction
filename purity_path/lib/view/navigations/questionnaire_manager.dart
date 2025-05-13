@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:purity_path/utils/consts.dart';
 import 'questions/frequency_question.dart';
 import 'questions/triggers_question.dart';
 import 'questions/motivation_question.dart';
@@ -77,7 +78,7 @@ class _QuestionnaireManagerState extends State<QuestionnaireManager> {
                   LinearProgressIndicator(
                     value: (_currentPage + 1) / _totalPages,
                     backgroundColor: Colors.grey[200],
-                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF7EB7FF)),
+                    valueColor: const AlwaysStoppedAnimation<Color>(Color(AppColors.primary)),
                     minHeight: 8,
                     borderRadius: BorderRadius.circular(4),
                   ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:purity_path/utils/routes/routes.dart';
+import 'package:purity_path/utils/routes/routes_name.dart';
 import 'package:purity_path/view/navigations/welcome.dart';
-
 
 void main() {
   runApp(const MyApp());
@@ -12,13 +13,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Purity Path',
+      title: 'NoFap Islam',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Merriweather',
         scaffoldBackgroundColor: Colors.grey[50],
       ),
-      home: const LoginPage(),
+      onGenerateRoute: AppPages.onGenerateRoute,
+
+      initialRoute: RoutesName.welcome,
     );
   }
 }
