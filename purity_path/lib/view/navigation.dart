@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'navigations/history.dart';
-import 'navigations/home.dart';
+import 'package:purity_path/utils/consts.dart';
+import 'navigations/objectifs.dart';
+import 'navigations/goals.dart';
+//import 'navigations/home.dart';
+import 'navigations/home2.dart';
 import 'navigations/lessons.dart';
 import 'navigations/profile.dart';
-import 'navigations/google.dart';
 
 // Using AppConstants from previous code
 class AppConstants {
@@ -25,9 +27,9 @@ class _NavigationState extends State<Navigation> {
 
   static const List<Widget> _pages = [
     Home(),
-    LoginPage(),
-    Profile(),
-    History(),
+    Lessons(),
+    GoalsPage(),
+    ProfilePage(),
    
   ];
 
@@ -103,7 +105,7 @@ class _CustomBottomNavigationBar extends StatelessWidget {
         currentIndex: selectedIndex,
         onTap: onItemTapped,
         backgroundColor: Colors.white,
-        selectedItemColor: AppConstants.primaryColor,
+        selectedItemColor: Color(AppColors.primary),
         unselectedItemColor: Colors.grey.shade600,
         type: BottomNavigationBarType.fixed,
         selectedLabelStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -113,29 +115,29 @@ class _CustomBottomNavigationBar extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
         elevation: 0,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home_filled),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.auto_stories_outlined),
-            activeIcon: Icon(Icons.auto_stories),
-            label: 'Lessons',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history_outlined),
-            activeIcon: Icon(Icons.history),
-            label: 'History',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-      ),
+   items: const [
+  BottomNavigationBarItem(
+    icon: Icon(Icons.home_outlined),
+    activeIcon: Icon(Icons.home_rounded), // softer, friendlier look
+    label: 'Home',
+  ),
+  BottomNavigationBarItem(
+    icon: Icon(Icons.menu_book_outlined),
+    activeIcon: Icon(Icons.menu_book), // more intuitive for lessons
+    label: 'Lessons',
+  ),
+  BottomNavigationBarItem(
+    icon: Icon(Icons.flag_outlined),
+    activeIcon: Icon(Icons.flag), // clearer symbol for "objectives"
+    label: 'Goals',
+  ),
+  BottomNavigationBarItem(
+    icon: Icon(Icons.account_circle_outlined),
+    activeIcon: Icon(Icons.account_circle), // more expressive than person
+    label: 'Profile',
+  ),
+],
+ ),
     );
   }
 }

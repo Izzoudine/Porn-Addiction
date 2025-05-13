@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import '../questionnaire_layout.dart';
 
 class FrequencyQuestion extends StatefulWidget {
@@ -37,7 +38,7 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
       } else if (widget.selectedValue == 'Very Challenging') {
         _selectedFrequency = 5; // Middle of 4-6 range
       } else if (widget.selectedValue == 'Extremely Challenging') {
-        _selectedFrequency = 8; // Representing 7+ range
+        _selectedFrequency = 8; // Middle of 7+ range
       }
     }
     
@@ -78,6 +79,21 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
     }
   }
 
+  // Calculate the position for the slider thumb based on frequency
+  double _calculateSliderPosition(int frequency, BuildContext context) {
+    // Calculate available width accounting for padding and thumb width
+    final double availableWidth = MediaQuery.of(context).size.width - 80;
+    final double leftPadding = 30.0;
+    
+    // Calculate position based on frequency (1-7 range)
+    // Divide available width into 7 equal segments
+    final double segmentWidth = availableWidth / 6;
+    final double position = (frequency - 1) * segmentWidth;
+    
+    // Center the thumb (thumb width is 50) and add left padding
+    return position + leftPadding - 25;
+  }
+
   @override
   Widget build(BuildContext context) {
     return QuestionLayout(
@@ -91,40 +107,287 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
         child: Column(
           children: [
             const SizedBox(height: 20),
-            // Frequency display
+            // Gauge display
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
-              height: 120,
+              height: 200,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: _getFrequencyColor(_selectedFrequency),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: _getFrequencyColor(_selectedFrequency).withOpacity(0.3),
-                    blurRadius: 15,
+                    color: Colors.grey.withOpacity(0.2),
+                    blurRadius: 10,
                     offset: const Offset(0, 5),
                   ),
                 ],
               ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Frequency Gauge
+                  SizedBox(
+                    height: 140,
+                    width: 140,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Background semicircle
+                        CustomPaint(
+                          size: const Size(140, 140),
+                          painter: _GaugePainter(
+                            gaugeValue: 0,
+                            backgroundColor: Colors.grey[200]!,
+                            valueColor: Colors.transparent,
+                            isBackground: true,
+                          ),
+                        ),
+                        // Value semicircle
+                        _selectedFrequency > 0 ? CustomPaint(
+                          size: const Size(140, 140),
+                          painter: _GaugePainter(
+                            gaugeValue: _selectedFrequency / 7,
+                            backgroundColor: Colors.transparent,
+                            valueColor: _getFrequencyColor(_selectedFrequency),
+                            isBackground: false,
+                          ),
+                        ) : Container(),
+                        // Center value display
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _selectedFrequency > 0 ? _selectedFrequency.toString() : '0',
+                              style: TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                                color: _selectedFrequency > 0 
+                                    ? _getFrequencyColor(_selectedFrequency) 
+                                    : Colors.grey[400],
+                              ),
+                            ),
+                            Text(
+                              'times/week',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Value indicator on arc
+                        if (_selectedFrequency > 0)
+                          Positioned(
+                            top: 15,
+                            child: Transform.rotate(
+                              angle: (math.pi * (_selectedFrequency / 7)) - math.pi / 2,
+                              child: Transform.translate(
+                                offset: const Offset(0, -50),
+                                child: Container(
+                                  width: 22,
+                                  height: 22,
+                                  decoration: BoxDecoration(
+                                    color: _getFrequencyColor(_selectedFrequency),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 3),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.2),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  // Challenge level text
+                  Text(
+                    _selectedFrequency > 0 ? _getChallengeText(_selectedFrequency) : 'Select frequency',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: _selectedFrequency > 0 
+                          ? _getFrequencyColor(_selectedFrequency) 
+                          : Colors.grey[400],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 30),
+            // Sliding gauge selector
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Container(
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(40),
+                ),
+                child: Stack(
                   children: [
-                    Text(
-                      _selectedFrequency > 0 ? _getDisplayText(_selectedFrequency) : 'Select frequency',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                    // Value markers and track
+                    Positioned.fill(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: List.generate(7, (index) {
+                            final value = index + 1;
+                            return Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 4,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[400],
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  value == 7 ? '7+' : value.toString(),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            );
+                          }),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _selectedFrequency > 0 ? _getChallengeText(_selectedFrequency) : '',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.white,
+                    // Colored track showing selected range
+                    if (_selectedFrequency > 0)
+                      Positioned(
+                        left: 30,
+                        right: 30,
+                        top: 39,
+                        child: Container(
+                          height: 4,
+                          child: Row(
+                            children: [
+                              Flexible(
+                                flex: _selectedFrequency,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: _getFrequencyColor(_selectedFrequency),
+                                    borderRadius: const BorderRadius.only(
+                                      topLeft: Radius.circular(2),
+                                      bottomLeft: Radius.circular(2),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Flexible(
+                                flex: 7 - _selectedFrequency,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[300],
+                                    borderRadius: const BorderRadius.only(
+                                      topRight: Radius.circular(2),
+                                      bottomRight: Radius.circular(2),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    // Slider thumb
+                    if (_selectedFrequency > 0)
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 150),
+                        curve: Curves.easeOutCubic,
+                        left: _calculateSliderPosition(_selectedFrequency, context),
+                        top: 15,
+                        child: GestureDetector(
+                          onHorizontalDragUpdate: (details) {
+                            final RenderBox box = context.findRenderObject() as RenderBox;
+                            final Offset localPosition = box.globalToLocal(details.globalPosition);
+                            
+                            // Calculate available width for slider (accounting for padding and thumb size)
+                            final double availableWidth = box.size.width - 60;
+                            final double leftPadding = 30;
+                            
+                            // Calculate position within available width
+                            final double position = (localPosition.dx - leftPadding).clamp(0.0, availableWidth);
+                            
+                            // Calculate frequency (1-7) based on position
+                            final int frequency = (position / availableWidth * 7).ceil();
+                            final int clampedFrequency = frequency.clamp(1, 7);
+                            
+                            if (_selectedFrequency != clampedFrequency) {
+                              setState(() {
+                                _selectedFrequency = clampedFrequency;
+                              });
+                              widget.onValueChanged(_getValueFromFrequency(clampedFrequency));
+                            }
+                          },
+                          child: Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: _getFrequencyColor(_selectedFrequency),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: _getFrequencyColor(_selectedFrequency).withOpacity(0.3),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Text(
+                                _selectedFrequency >= 7 ? '7+' : _selectedFrequency.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    // Sliding area - captures initial tap
+                    Positioned.fill(
+                      child: GestureDetector(
+                        onTapDown: (details) {
+                          final RenderBox box = context.findRenderObject() as RenderBox;
+                          final Offset localPosition = box.globalToLocal(details.globalPosition);
+                          
+                          // Calculate available width for slider (accounting for padding)
+                          final double availableWidth = box.size.width - 60;
+                          final double leftPadding = 30;
+                          
+                          // Calculate position within available width
+                          final double position = (localPosition.dx - leftPadding).clamp(0.0, availableWidth);
+                          
+                          // Calculate frequency (1-7) based on position
+                          final int frequency = (position / availableWidth * 7).ceil();
+                          final int clampedFrequency = frequency.clamp(1, 7);
+                          
+                          setState(() {
+                            _selectedFrequency = clampedFrequency;
+                          });
+                          widget.onValueChanged(_getValueFromFrequency(clampedFrequency));
+                        },
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          color: Colors.transparent,
+                        ),
                       ),
                     ),
                   ],
@@ -132,136 +395,10 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
               ),
             ),
             const SizedBox(height: 40),
-            // Custom frequency selector
-            Container(
-              height: 80,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(40),
-              ),
-              child: Stack(
-                children: [
-                  // Background track
-                  Positioned.fill(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: List.generate(7, (index) {
-                          return Container(
-                            width: 4,
-                            height: 20,
-                            color: Colors.grey[400],
-                          );
-                        }),
-                      ),
-                    ),
-                  ),
-                  // Frequency markers
-                  Positioned(
-                    left: 15,
-                    bottom: 5,
-                    child: Text(
-                      '1',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 15,
-                    bottom: 5,
-                    child: Text(
-                      '7+',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                  // Slider thumb
-                  if (_selectedFrequency > 0)
-                    AnimatedPositioned(
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeOutCubic,
-                      left: _getPositionForFrequency(_selectedFrequency, context),
-                      top: 15,
-                      child: GestureDetector(
-                        onHorizontalDragUpdate: (details) {
-                          final RenderBox box = context.findRenderObject() as RenderBox;
-                          final width = box.size.width - 80; // Accounting for padding
-                          final position = details.localPosition.dx.clamp(0, width);
-                          final frequency = ((position / width) * 7).round();
-                          setState(() {
-                            _selectedFrequency = frequency < 1 ? 1 : frequency > 7 ? 7 : frequency;
-                          });
-                          widget.onValueChanged(_getValueFromFrequency(_selectedFrequency));
-                        },
-                        child: Container(
-                          width: 50,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: _getFrequencyColor(_selectedFrequency),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: _getFrequencyColor(_selectedFrequency).withOpacity(0.3),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Center(
-                            child: Text(
-                              _selectedFrequency >= 7 ? '7+' : _selectedFrequency.toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  // Tap areas for selection
-                  Row(
-                    children: List.generate(7, (index) {
-                      return Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedFrequency = index + 1;
-                            });
-                            widget.onValueChanged(_getValueFromFrequency(_selectedFrequency));
-                          },
-                          behavior: HitTestBehavior.opaque,
-                          child: Container(
-                            height: 80,
-                            color: Colors.transparent,
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 40),
          ],
         ),
       ),
     );
-  }
-  
-  double _getPositionForFrequency(int frequency, BuildContext context) {
-    final width = MediaQuery.of(context).size.width - 88; // Accounting for padding and thumb width
-    final position = ((frequency - 1) / 6) * width;
-    return position + 15; // Adding left padding
   }
   
   Color _getFrequencyColor(int frequency) {
@@ -282,5 +419,82 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
     } else {
       return 'Extremely Challenging';
     }
+  }
+}
+
+// Custom painter for the gauge
+class _GaugePainter extends CustomPainter {
+  final double gaugeValue; // Value from 0.0 to 1.0
+  final Color backgroundColor;
+  final Color valueColor;
+  final bool isBackground;
+
+  _GaugePainter({
+    required this.gaugeValue,
+    required this.backgroundColor,
+    required this.valueColor,
+    required this.isBackground,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+    
+    final paint = Paint()
+      ..color = isBackground ? backgroundColor : valueColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 12.0
+      ..strokeCap = StrokeCap.round;
+    
+    // Draw semicircle (180 degrees)
+    if (isBackground) {
+      // Draw full semicircle background
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius - 6),
+        math.pi, // Start from the bottom (180 degrees)
+        math.pi, // Sweep 180 degrees (to the top)
+        false,
+        paint,
+      );
+    } else {
+      // Draw value arc
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius - 6),
+        math.pi, // Start from the bottom (180 degrees)
+        math.pi * gaugeValue, // Sweep based on value (0-180 degrees)
+        false,
+        paint,
+      );
+    }
+    
+    // Add tick marks for background
+    if (isBackground) {
+      final tickPaint = Paint()
+        ..color = Colors.grey[400]!
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0;
+      
+      for (int i = 0; i <= 7; i++) {
+        final angle = math.pi + (math.pi * i / 7);
+        final outerPoint = Offset(
+          center.dx + (radius - 15) * math.cos(angle),
+          center.dy + (radius - 15) * math.sin(angle),
+        );
+        final innerPoint = Offset(
+          center.dx + (radius - 25) * math.cos(angle),
+          center.dy + (radius - 25) * math.sin(angle),
+        );
+        
+        canvas.drawLine(innerPoint, outerPoint, tickPaint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_GaugePainter oldDelegate) {
+    return oldDelegate.gaugeValue != gaugeValue ||
+           oldDelegate.backgroundColor != backgroundColor ||
+           oldDelegate.valueColor != valueColor;
   }
 }

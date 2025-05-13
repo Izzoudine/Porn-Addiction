@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:purity_path/utils/consts.dart';
+import 'package:purity_path/utils/routes/routes_name.dart';
 import '../../data/models/permission_model.dart';
-import 'accessibility_info.dart';
 
 class PermissionsScreen extends StatefulWidget {
   const PermissionsScreen({super.key});
@@ -10,17 +11,18 @@ class PermissionsScreen extends StatefulWidget {
   State<PermissionsScreen> createState() => _PermissionsScreenState();
 }
 
-class _PermissionsScreenState extends State<PermissionsScreen> with TickerProviderStateMixin {
+class _PermissionsScreenState extends State<PermissionsScreen>
+    with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  
+
   final List<PermissionItem> _permissions = [
     PermissionItem(
       permission: Permission.notification,
       title: 'Notification Access',
       description: 'Monitor and control notifications from other apps',
       icon: Icons.notifications_active,
-      color: const Color(0xFF3B82F6),
+      color: const Color(AppColors.primary),
     ),
     PermissionItem(
       permission: Permission.notification,
@@ -54,10 +56,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> with TickerProvid
       duration: const Duration(milliseconds: 800),
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     _animationController.forward();
     _checkPermissions();
@@ -83,15 +82,10 @@ class _PermissionsScreenState extends State<PermissionsScreen> with TickerProvid
   Future<void> _requestPermission(PermissionItem item) async {
     if (item.isAccessibility) {
       // Navigate to the accessibility info page
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const AccessibilityInfoPage(),
-        ),
-      );
+      Navigator.pushNamed(context, RoutesName.accessibility);
       return;
     }
-    
+
     if (item.permission != null) {
       final status = await item.permission!.request();
       setState(() {
@@ -119,7 +113,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> with TickerProvid
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF3B82F6)),
+          icon: const Icon(Icons.arrow_back, color: Color(AppColors.primary)),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -131,10 +125,14 @@ class _PermissionsScreenState extends State<PermissionsScreen> with TickerProvid
         padding: const EdgeInsets.all(16.0),
         child: ElevatedButton(
           onPressed: () {
-            final allGranted = _permissions.every(
+             Navigator.pushNamedAndRemoveUntil(
+                                  context,
+                                  RoutesName.navigation,(Route<dynamic> route) => false
+                                );
+       /*     final allGranted = _permissions.every(
               (item) => item.status?.isGranted ?? false || item.isAccessibility,
             );
-            
+
             if (allGranted) {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
@@ -146,34 +144,40 @@ class _PermissionsScreenState extends State<PermissionsScreen> with TickerProvid
             } else {
               showDialog(
                 context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Permissions Required'),
-                  content: const Text(
-                    'Some permissions are still required for the app to function properly. Would you like to grant them now?'
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Later'),
+                builder:
+                    (context) => AlertDialog(
+                      title: const Text('Permissions Required'),
+                      content: const Text(
+                        'Some permissions are still required for the app to function properly. Would you like to grant them now?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Later'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            
+                       /*     for (var item in _permissions) {
+                              if (!(item.status?.isGranted ?? false) &&
+                                  item.permission != null) {
+                                _requestPermission(item);
+                              }
+                               
+                              
+                            }
+                         
+                         */ },
+                          child: const Text('Grant Now'),
+                        ),
+                      ],
                     ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        for (var item in _permissions) {
-                          if (!(item.status?.isGranted ?? false) && item.permission != null) {
-                            _requestPermission(item);
-                          }
-                        }
-                      },
-                      child: const Text('Grant Now'),
-                    ),
-                  ],
-                ),
               );
             }
+            */
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF3B82F6),
+            backgroundColor: const Color(AppColors.primary),
             foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 56),
             shape: RoundedRectangleBorder(
@@ -183,10 +187,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> with TickerProvid
           ),
           child: const Text(
             'Complete Setup',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ),
       ),
@@ -218,32 +219,33 @@ class _PermissionsScreenState extends State<PermissionsScreen> with TickerProvid
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF3B82F6),
+                        color: Color(AppColors.primary),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
-                  value: _permissions.isEmpty 
-                      ? 0 
-                      : _grantedPermissionsCount / _permissions.length,
+                  value:
+                      _permissions.isEmpty
+                          ? 0
+                          : _grantedPermissionsCount / _permissions.length,
                   backgroundColor: Colors.grey[200],
-                  color: const Color(0xFF3B82F6),
+                  color: const Color(AppColors.primary),
                   minHeight: 8,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ],
             ),
           ),
-          
+
           // Info card
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 20),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
+                colors: [Color(AppColors.secondary), Color(AppColors.primary)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -286,10 +288,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> with TickerProvid
                       SizedBox(height: 4),
                       Text(
                         'These permissions allow us to provide the core functionality of our app and ensure it works properly.',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.white, fontSize: 14),
                       ),
                     ],
                   ),
@@ -297,9 +296,9 @@ class _PermissionsScreenState extends State<PermissionsScreen> with TickerProvid
               ],
             ),
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Permissions list
           ListView.builder(
             shrinkWrap: true,
@@ -309,7 +308,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> with TickerProvid
             itemBuilder: (context, index) {
               final item = _permissions[index];
               final isGranted = item.status?.isGranted ?? false;
-              
+
               return Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
@@ -323,9 +322,10 @@ class _PermissionsScreenState extends State<PermissionsScreen> with TickerProvid
                     ),
                   ],
                   border: Border.all(
-                    color: isGranted 
-                        ? const Color(0xFFD1FAE5) 
-                        : Colors.grey.withOpacity(0.2),
+                    color:
+                        isGranted
+                            ? const Color(0xFFD1FAE5)
+                            : Colors.grey.withOpacity(0.2),
                     width: isGranted ? 2 : 1,
                   ),
                 ),
@@ -346,11 +346,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> with TickerProvid
                               color: item.color.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Icon(
-                              item.icon,
-                              color: item.color,
-                              size: 28,
-                            ),
+                            child: Icon(item.icon, color: item.color, size: 28),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
@@ -380,7 +376,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> with TickerProvid
                           if (item.isAccessibility)
                             const Icon(
                               Icons.arrow_forward_ios,
-                              color: Color(0xFF3B82F6),
+                              color: Color(AppColors.secondary),
                               size: 16,
                             )
                           else
@@ -389,13 +385,16 @@ class _PermissionsScreenState extends State<PermissionsScreen> with TickerProvid
                               height: 24,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: isGranted
-                                    ? const Color(0xFF10B981)
-                                    : Colors.grey[300],
+                                color:
+                                    isGranted
+                                        ? const Color(0xFF10B981)
+                                        : Colors.grey[300],
                               ),
                               child: Center(
                                 child: Icon(
-                                  isGranted ? Icons.check : Icons.arrow_forward_ios,
+                                  isGranted
+                                      ? Icons.check
+                                      : Icons.arrow_forward_ios,
                                   color: Colors.white,
                                   size: isGranted ? 16 : 12,
                                 ),

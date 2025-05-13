@@ -1,377 +1,540 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
-class Profile extends StatefulWidget {
-  const Profile({Key? key}) : super(key: key);
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({Key? key}) : super(key: key);
 
   @override
-  _ProfilePageState createState() => _ProfilePageState();
+  State<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<Profile> {
- @override
+class _ProfilePageState extends State<ProfilePage> {
+  bool _isGuest = true;
+  String _userName = "Invité";
+  String _userEmail = "";
+  int _cleanDays = 0;
+  int _totalRelapses = 0;
+  DateTime? _lastRelapseDate;
+  DateTime? _accountCreationDate;
+  bool _hasStartedJourney = false;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Simuler la récupération des données utilisateur
+    // Dans une vraie application, ces données viendraient d'une base de données ou d'une API
+    final isGuest = prefs.getBool('isGuest') ?? true;
+    final userName = prefs.getString('userName') ?? "Invité";
+    final userEmail = prefs.getString('userEmail') ?? "";
+    final totalRelapses = prefs.getInt('totalRelapses') ?? 0;
+    final accountCreationDateStr = prefs.getString('accountCreationDate');
+    final hasStartedJourney = prefs.getBool('hasStartedJourney') ?? false;
+    
+    // Récupérer la date du dernier relapse pour calculer les jours propres
+    final lastRelapseStr = prefs.getString('lastRelapse');
+    DateTime? lastRelapseDate;
+    int cleanDays = 0;
+    
+    if (lastRelapseStr != null && hasStartedJourney) {
+      lastRelapseDate = DateTime.parse(lastRelapseStr);
+      final now = DateTime.now();
+      cleanDays = now.difference(lastRelapseDate).inDays;
+    }
+    
+    // Récupérer ou définir la date de création du compte
+    DateTime accountCreationDate;
+    if (accountCreationDateStr != null) {
+      accountCreationDate = DateTime.parse(accountCreationDateStr);
+    } else {
+      accountCreationDate = DateTime.now();
+      await prefs.setString('accountCreationDate', accountCreationDate.toIso8601String());
+    }
+
+    setState(() {
+      _isGuest = isGuest;
+      _userName = userName;
+      _userEmail = userEmail;
+      _cleanDays = cleanDays;
+      _totalRelapses = totalRelapses;
+      _lastRelapseDate = lastRelapseDate;
+      _accountCreationDate = accountCreationDate;
+      _hasStartedJourney = hasStartedJourney;
+      _isLoading = false;
+    });
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return "N/A";
+    // Utiliser le format de date sans spécifier de locale
+    return DateFormat('dd MMMM yyyy').format(date);
+  }
+
+  void _showConnectDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text(
+            "Se connecter",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2196F3),
+            ),
+          ),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Connectez-vous pour sauvegarder votre progression et accéder à toutes les fonctionnalités.",
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(height: 20),
+              Text(
+                "Cette fonctionnalité sera disponible prochainement.",
+                style: TextStyle(
+                  fontSize: 14,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                "Fermer",
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Ici, vous pourriez naviguer vers la page de connexion
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2196F3),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              child: const Text("Continuer"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: const Text(
-          'Your Profile',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          'Profil',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF2196F3),
+          ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              // Settings logic would go here
-            },
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(
+          color: Color(0xFF2196F3),
+        ),
+           ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Column(
+                children: [
+                  // En-tête du profil
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        // Avatar et badge invité
+                        Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            // Avatar
+                            Container(
+                              width: 100,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2196F3).withOpacity(0.1),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: const Color(0xFF2196F3),
+                                  width: 2,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  _userName.isNotEmpty ? _userName[0].toUpperCase() : "?",
+                                  style: const TextStyle(
+                                    fontSize: 40,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF2196F3),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Badge invité
+                            if (_isGuest)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: const Text(
+                                  "INVITÉ",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        // Nom d'utilisateur
+                        Text(
+                          _userName,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF333333),
+                          ),
+                        ),
+                        if (_userEmail.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _userEmail,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 16),
+                        // Bouton de connexion pour les invités
+                        if (_isGuest)
+                          ElevatedButton.icon(
+                            onPressed: _showConnectDialog,
+                            icon: const Icon(Icons.login),
+                            label: const Text("Se connecter"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2196F3),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                
+                  const SizedBox(height: 20),
+                  
+                  // Options du profil
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.settings,
+                          size: 20,
+                          color: Color(0xFF2196F3),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Options',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF333333),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // Liste des options
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                                    _buildOptionItem(
+                          icon: Icons.notifications_outlined,
+                          title: "Notifications",
+                          onTap: () {
+                            // Action pour les notifications
+                          },
+                        ),
+                        const Divider(height: 1),
+                        _buildOptionItem(
+                          icon: Icons.language_outlined,
+                          title: "Langue",
+                          subtitle: "Français",
+                          onTap: () {
+                            // Action pour changer la langue
+                          },
+                        ),
+                        const Divider(height: 1),
+                        _buildOptionItem(
+                          icon: Icons.help_outline,
+                          title: "Aide et support",
+                          onTap: () {
+                            // Action pour l'aide
+                          },
+                        ),
+                        const Divider(height: 1),
+                        _buildOptionItem(
+                          icon: Icons.info_outline,
+                          title: "À propos",
+                          onTap: () {
+                            // Action pour à propos
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // Bouton de déconnexion
+                  if (!_isGuest)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          // Action pour se déconnecter
+                        },
+                        icon: const Icon(Icons.logout),
+                        label: const Text("Se déconnecter"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.shade50,
+                          foregroundColor: Colors.red,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                          ),
+                          minimumSize: const Size(double.infinity, 0),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                        ),
+                      ),
+                    ),
+                  
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Center(
-              child: CircleAvatar(
-                radius: 50,
-                backgroundColor: Colors.teal,
-                child: Text(
-                  'M',
-                  style: TextStyle(
-                    fontSize: 40,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
             ),
-            const SizedBox(height: 16),
-            const Center(
-              child: Text(
-                'Muslim_Brother',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 24,
             ),
-            const SizedBox(height: 8),
-            Center(
-              child: Text(
-                'Member since ${DateFormat('MMMM yyyy').format(DateTime.now().subtract(const Duration(days: 60)))}',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                ),
-              ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: color,
             ),
-            const SizedBox(height: 24),
-            const Text(
-              'Your Journey',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                _buildJourneyCard(
-                  title: 'Current Streak',
-                  value: '7 days',
-                  icon: Icons.trending_up,
-                  color: Colors.teal,
-                ),
-                _buildJourneyCard(
-                  title: 'Best Streak',
-                  value: '18 days',
-                  icon: Icons.emoji_events,
-                  color: Colors.amber,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _buildJourneyCard(
-                  title: 'Duas Read',
-                  value: '24',
-                  icon: Icons.menu_book,
-                  color: Colors.indigo,
-                ),
-                _buildJourneyCard(
-                  title: 'Motivations',
-                  value: '31',
-                  icon: Icons.psychology,
-                  color: Colors.purple,
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Your Goals',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildGoalItem(
-                      title: '7 days clean',
-                      progress: 1.0,
-                      completed: true,
-                    ),
-                    const Divider(height: 24),
-                    _buildGoalItem(
-                      title: '30 days clean',
-                      progress: 7 / 30,
-                      completed: false,
-                    ),
-                    const Divider(height: 24),
-                    _buildGoalItem(
-                      title: '90 days clean',
-                      progress: 7 / 90,
-                      completed: false,
-                    ),
-                    const Divider(height: 24),
-                    _buildGoalItem(
-                      title: 'Read 50 duas',
-                      progress: 24 / 50,
-                      completed: false,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Settings',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildSettingItem(
-              icon: Icons.notifications,
-              title: 'Notifications',
-              subtitle: 'Daily reminders, emergency alerts',
-              onTap: () {},
-            ),
-            _buildSettingItem(
-              icon: Icons.psychology,
-              title: 'Triggers',
-              subtitle: 'Manage your known triggers',
-              onTap: () {},
-            ),
-            _buildSettingItem(
-              icon: Icons.security,
-              title: 'App Lock',
-              subtitle: 'Secure your app with PIN or biometric',
-              onTap: () {},
-            ),
-            _buildSettingItem(
-              icon: Icons.help_outline,
-              title: 'Get Help',
-              subtitle: 'Professional resources and support',
-              onTap: () {},
-            ),
-            const SizedBox(height: 8),
-            Center(
-              child: TextButton(
-                onPressed: () {
-                  // Log out logic would go here
-                },
-                child: Text(
-                  'Log Out',
-                  style: TextStyle(color: Colors.red[400]),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: Text(
-                'Purity Path v1.0',
-                style: TextStyle(
-                  color: Colors.grey[500],
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildJourneyCard({
+  Widget _buildInfoRow({
+    required IconData icon,
     required String title,
     required String value,
-    required IconData icon,
-    required Color color,
   }) {
-    return Expanded(
-      child: Card(
-        elevation: 1,
-        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    icon,
-                    color: color,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2196F3).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              icon,
+              color: const Color(0xFF2196F3),
+              size: 20,
+            ),
           ),
-        ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF666666),
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF333333),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildGoalItem({
-    required String title,
-    required double progress,
-    required bool completed,
-  }) {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    completed ? Icons.check_circle : Icons.radio_button_unchecked,
-                    color: completed ? Colors.green : Colors.grey,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: completed ? FontWeight.bold : FontWeight.normal,
-                      color: completed ? Colors.green : null,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Stack(
-                children: [
-                  Container(
-                    height: 6,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                  Container(
-                    height: 6,
-                    width: 300 * progress,
-                    decoration: BoxDecoration(
-                      color: completed ? Colors.green : Colors.teal,
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                completed
-                    ? 'Completed!'
-                    : '${(progress * 100).toInt()}% completed',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: completed ? Colors.green : Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSettingItem({
+  Widget _buildOptionItem({
     required IconData icon,
     required String title,
-    required String subtitle,
+    String? subtitle,
     required VoidCallback onTap,
   }) {
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  color: Colors.teal,
-                ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2196F3).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
+              child: Icon(
+                icon,
+                color: const Color(0xFF2196F3),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF333333),
                     ),
-                    const SizedBox(height: 4),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
                     Text(
                       subtitle,
                       style: TextStyle(
@@ -380,14 +543,15 @@ class _ProfilePageState extends State<Profile> {
                       ),
                     ),
                   ],
-                ),
+                ],
               ),
-              const Icon(
-                Icons.chevron_right,
-                color: Colors.grey,
-              ),
-            ],
-          ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Colors.grey,
+            ),
+          ],
         ),
       ),
     );

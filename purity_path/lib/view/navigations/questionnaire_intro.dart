@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'questionnaire_manager.dart';
+import 'package:purity_path/utils/consts.dart';
+import 'package:purity_path/utils/routes/routes_name.dart';
 
 class QuestionnaireIntroPage extends StatelessWidget {
   const QuestionnaireIntroPage({Key? key}) : super(key: key);
@@ -123,11 +124,9 @@ class QuestionnaireIntroPage extends StatelessWidget {
                           height: 56,
                           child: ElevatedButton(
                             onPressed: () {
-                              Navigator.push(
+                              Navigator.pushNamed(
                                 context,
-                                MaterialPageRoute(
-                                  builder: (context) => QuestionnaireManager(),
-                                ),
+                             RoutesName.questionnaireManager
                               );
                             },
                             style: ElevatedButton.styleFrom(
@@ -169,7 +168,7 @@ class WavePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint =
         Paint()
-          ..color = const Color(0xFF3FA9FF)
+          ..color = const Color(AppColors.primary)
           ..style = PaintingStyle.fill;
 
     final path = Path();

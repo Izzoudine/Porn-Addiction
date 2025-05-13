@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:purity_path/utils/consts.dart';
 
 class QuestionLayout extends StatelessWidget {
   final String questionTitle;
@@ -75,7 +76,7 @@ class QuestionLayout extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: canProceed ? onNext : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7EB7FF),
+                    backgroundColor: const Color(AppColors.primary),
                     foregroundColor: Colors.white,
                     disabledBackgroundColor: Colors.grey[300],
                     disabledForegroundColor: Colors.grey[600],

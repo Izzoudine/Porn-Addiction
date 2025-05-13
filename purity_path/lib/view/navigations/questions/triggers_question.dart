@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../questionnaire_layout.dart';
-import 'navigation_button.dart'; 
 class TriggersQuestion extends StatelessWidget {
   final String? selectedValue;
   final String otherValue;

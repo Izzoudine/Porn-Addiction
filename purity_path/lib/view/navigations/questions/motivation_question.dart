@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:purity_path/utils/consts.dart';
 import '../questionnaire_layout.dart';
 
 
@@ -51,7 +52,7 @@ class MotivationQuestion extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           border: Border.all(
-            color: isSelected ? const Color(0xFF7EB7FF) : Colors.grey[300]!,
+            color: isSelected ? const Color(AppColors.primary) : Colors.grey[300]!,
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
@@ -65,10 +66,10 @@ class MotivationQuestion extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? const Color(0xFF7EB7FF) : Colors.grey[400]!,
+                  color: isSelected ? const Color(AppColors.primary) : Colors.grey[400]!,
                   width: 2,
                 ),
-                color: isSelected ? const Color(0xFF7EB7FF) : Colors.white,
+                color: isSelected ? const Color(AppColors.primary) : Colors.white,
               ),
               child: isSelected
                   ? const Icon(
@@ -85,7 +86,7 @@ class MotivationQuestion extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? const Color(0xFF7EB7FF) : Colors.black87,
+                  color: isSelected ? const Color(AppColors.primary) : Colors.black87,
                 ),
               ),
             ),

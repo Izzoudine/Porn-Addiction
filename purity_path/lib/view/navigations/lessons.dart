@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:purity_path/utils/consts.dart';
 
 class Lessons extends StatefulWidget {
   const Lessons({Key? key}) : super(key: key);
@@ -44,7 +45,7 @@ class _LessonsScreenState extends State<Lessons> with SingleTickerProviderStateM
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.teal,
+                      color: Color(AppColors.primary),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -53,7 +54,8 @@ class _LessonsScreenState extends State<Lessons> with SingleTickerProviderStateM
                     'Islamic guidance for your journey',
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.grey,
+                      color: Color(AppColors.primary),
+
                       fontStyle: FontStyle.italic,
                     ),
                     textAlign: TextAlign.center,
@@ -78,10 +80,12 @@ Container(
         controller: _tabController,
         indicator: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          color: Colors.teal.shade600,
+                               color: Color(AppColors.primary),
+
+          
           boxShadow: [
             BoxShadow(
-              color: Colors.teal.withOpacity(0.3),
+              color: Color(AppColors.primary).withOpacity(0.3),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),

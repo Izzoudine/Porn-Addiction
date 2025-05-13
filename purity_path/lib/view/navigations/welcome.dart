@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-/*
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';*/
-import 'google2.dart';
+import 'package:purity_path/utils/consts.dart';
+import 'package:purity_path/utils/routes/routes_name.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -72,8 +70,8 @@ class _LoginPageState extends State<LoginPage> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF2468DC), // Rich blue at top
-              Color(0xFF7EB7FF), // Lighter blue at bottom
+              Color(AppColors.secondary), // Rich blue at top
+              Color(AppColors.primary), // Lighter blue at bottom
             ],
           ),
         ),
@@ -103,7 +101,7 @@ class _LoginPageState extends State<LoginPage> {
                   child: const Center(
                     child: Icon(
                       Icons.healing,
-                      color: Color(0xFF2468DC),
+                      color: Color(AppColors.secondary),
                       size: 50,
                     ),
                   ),
@@ -161,7 +159,7 @@ class _LoginPageState extends State<LoginPage> {
                         child: _buildAppIcon(Colors.green.shade300, 60), // Blue
                       ),
                       Positioned(
-                        bottom: 50,
+                        bottom: 40,
                         right: 60,
                         child: _buildAppIcon(
                           Colors.orange.shade300,
@@ -169,9 +167,9 @@ class _LoginPageState extends State<LoginPage> {
                         ), // Green
                       ),
                       Positioned(
-                        bottom: 80,
+                        bottom: 60,
                         left: 50,
-                        child: _buildAppIcon(Colors.red.shade300, 65), // Red
+                        child: _buildAppIcon(Colors.red.shade300, 60), // Red
                       ),
                       Positioned(
                         top: 70,
@@ -235,11 +233,9 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: () {
                     // Handle existing user login
                     //   _signInWithGoogle();
-                    Navigator.push(
+                    Navigator.pushNamed(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => QuestionnaireIntroPage(),
-                      ),
+                   RoutesName.questionnaireIntro
                     );
                   },
                   child: const Text(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'permissions.dart';
+import 'package:purity_path/utils/consts.dart';
+import 'package:purity_path/utils/routes/routes_name.dart';
+
 class GoalsInformation extends StatefulWidget {
   final Map<String, dynamic> responses;
 
@@ -74,7 +76,7 @@ class _GoalsInformationState extends State<GoalsInformation> with SingleTickerPr
                         child: const Icon(
                           Icons.flag_rounded,
                           size: 40,
-                          color: Color(0xFF3FA9FF),
+                          color: Color(AppColors.primary),
                         ),
                       ),
                     ),
@@ -85,7 +87,7 @@ class _GoalsInformationState extends State<GoalsInformation> with SingleTickerPr
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF3FA9FF),
+                          color: Color(AppColors.primary),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -108,14 +110,14 @@ class _GoalsInformationState extends State<GoalsInformation> with SingleTickerPr
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFF2468DC), Color(0xFF7EB7FF)],
+                          colors: [Color(AppColors.secondary), Color(AppColors.primary)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF2468DC).withOpacity(0.3),
+                            color: const Color(AppColors.secondary).withOpacity(0.3),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -253,7 +255,7 @@ class _GoalsInformationState extends State<GoalsInformation> with SingleTickerPr
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF3FA9FF),
+                        color: Color(AppColors.primary),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -329,14 +331,12 @@ class _GoalsInformationState extends State<GoalsInformation> with SingleTickerPr
                         onPressed: () {
                           // Navigate to the main app
                           // This would typically go to your app's main dashboard
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(
-                              builder: (context) =>  PermissionsScreen(), // Replace with your main app screen
-                            ),
+                          Navigator.of(context).pushReplacementNamed(
+                            RoutesName.permissions
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF3FA9FF),
+                          backgroundColor: const Color(AppColors.primary),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
