@@ -1,0 +1,31 @@
+Collection: users
+  Document: {userId}
+    Fields:
+      - username: String
+      - email: String
+      - createdAt: Timestamp
+      - lastActive: Timestamp
+      - cleanStreak: Number
+      - totalCleanDays: Number
+      - startDate: Timestamp
+      - achievedGoals: Array<String>
+      - currentGoalId: String
+      - preferences: Object
+          - notificationEnabled: Boolean
+          - notificationTime: String
+      - isLocked: Boolean
+  Subcollection: userReflections
+    Document: {reflectionId}
+      Fields:
+        - motivation: String (e.g., "To be a better role model for my family.")
+        - trigger: String (e.g., "Late-night browsing.")
+        - frequency: Number (e.g., 7 for weekly reflection)
+        - createdAt: Timestamp
+  Subcollection: progressHistory
+    Document: {date}
+      Fields:
+        - date: Timestamp
+        - cleanStatus: Boolean
+        - streakAtTime: Number
+
+        
