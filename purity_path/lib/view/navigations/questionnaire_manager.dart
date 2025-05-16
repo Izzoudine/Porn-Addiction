@@ -4,6 +4,8 @@ import 'questions/frequency_question.dart';
 import 'questions/triggers_question.dart';
 import 'questions/motivation_question.dart';
 import 'goals_informations.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class QuestionnaireManager extends StatefulWidget {
   const QuestionnaireManager({Key? key}) : super(key: key);
@@ -16,7 +18,7 @@ class _QuestionnaireManagerState extends State<QuestionnaireManager> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   final int _totalPages = 3; // Reduced to 3 questions total
-  
+
   // Store user responses
   String? frequencyResponse;
   String? triggerResponse;
@@ -30,7 +32,7 @@ class _QuestionnaireManagerState extends State<QuestionnaireManager> {
     super.dispose();
   }
 
-  void goToNextPage() {
+  void goToNextPage() async {
     if (_currentPage < _totalPages - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
@@ -38,17 +40,34 @@ class _QuestionnaireManagerState extends State<QuestionnaireManager> {
       );
     } else {
       // Navigate to goals information page
+      final user = FirebaseAuth.instance.currentUser;
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .update({
+            'hasCompletedQuestionnaire': true,
+            'triggers': triggerResponse == 'Other'
+                          ? otherTrigger
+                          : triggerResponse,
+            'frequency': frequencyResponse,
+            'motivation': motivationResponse,
+          });
+
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => GoalsInformation(
-            responses: {
-              'frequency': frequencyResponse,
-              'trigger': triggerResponse == 'Other' ? otherTrigger : triggerResponse,
-              'motivation': motivationResponse,
-              // Set default value for reminders since we removed the question
-              'wantReminders': true,
-            },
-          ),
+          builder:
+              (context) => GoalsInformation(
+         /*       responses: {
+                  'frequency': frequencyResponse,
+                  'trigger':
+                      triggerResponse == 'Other'
+                          ? otherTrigger
+                          : triggerResponse,
+                  'motivation': motivationResponse,
+                  // Set default value for reminders since we removed the question
+                  'wantReminders': true,
+                },
+            */  ),
         ),
       );
     }
@@ -74,18 +93,20 @@ class _QuestionnaireManagerState extends State<QuestionnaireManager> {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                      const SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   LinearProgressIndicator(
                     value: (_currentPage + 1) / _totalPages,
                     backgroundColor: Colors.grey[200],
-                    valueColor: const AlwaysStoppedAnimation<Color>(Color(AppColors.primary)),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Color(AppColors.primary),
+                    ),
                     minHeight: 8,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ],
               ),
             ),
-            
+
             // Question pages
             Expanded(
               child: PageView(
@@ -123,8 +144,9 @@ class _QuestionnaireManagerState extends State<QuestionnaireManager> {
                     },
                     onNext: goToNextPage,
                     onPrevious: goToPreviousPage,
-                    canProceed: triggerResponse != null && 
-                               (triggerResponse != 'Other' || otherTrigger.isNotEmpty),
+                    canProceed:
+                        triggerResponse != null &&
+                        (triggerResponse != 'Other' || otherTrigger.isNotEmpty),
                   ),
                   MotivationQuestion(
                     selectedValue: motivationResponse,
@@ -136,7 +158,8 @@ class _QuestionnaireManagerState extends State<QuestionnaireManager> {
                     onNext: goToNextPage,
                     onPrevious: goToPreviousPage,
                     canProceed: motivationResponse != null,
-                    nextButtonText: 'Complete', // Changed to Complete since this is now the last question
+                    nextButtonText:
+                        'Complete', // Changed to Complete since this is now the last question
                   ),
                   // Removed RemindersQuestion
                 ],

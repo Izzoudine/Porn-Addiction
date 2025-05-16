@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:purity_path/data/models/daily_model.dart';
 import 'package:purity_path/utils/consts.dart';
+import 'package:purity_path/view/navigations/dailies_manager.dart';
 
 class Lessons extends StatefulWidget {
   const Lessons({Key? key}) : super(key: key);
@@ -8,15 +10,45 @@ class Lessons extends StatefulWidget {
   State<Lessons> createState() => _LessonsScreenState();
 }
 
-class _LessonsScreenState extends State<Lessons> with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+class _LessonsScreenState extends State<Lessons>
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late TabController _tabController;
-  
+
   @override
   bool get wantKeepAlive => true;
 
+ Future<void> printAllDailies() async {
+
+  // Get all dailies (ensure async)
+  final dailies = await DailiesManager.getAllDailies();
+  print('Dailies: $dailies');
+
+  // Check if dailies is a valid map
+  if (dailies == null || dailies.isEmpty) {
+    print('No dailies found');
+    return;
+  }
+
+  // Iterate through each section (duas, hadiths, motivations)
+  for (var section in dailies.keys) {
+    print('Section: $section');
+    final contentList = dailies[section] ?? [];
+    
+    if (contentList.isEmpty) {
+      print('  No content in $section');
+      continue;
+    }
+
+    // Iterate through each DailyContent in the section
+    for (var daily in contentList) {
+      print('  ID: ${daily.id}, Section: ${daily.contentType}, Text: ${daily.name}');
+    }
+  }
+}
   @override
   void initState() {
     super.initState();
+    printAllDailies();
     _tabController = TabController(length: 3, vsync: this);
   }
 
@@ -63,68 +95,74 @@ class _LessonsScreenState extends State<Lessons> with SingleTickerProviderStateM
                 ],
               ),
             ),
-            
-            const SizedBox(height: 15),
-            
-       // Solution 1: Using Container with fixed tab sizes
-Container(
-  margin: const EdgeInsets.symmetric(horizontal: 20),
-  child: Theme(
-    data: Theme.of(context).copyWith(
-      highlightColor: Colors.transparent,
-      splashColor: Colors.transparent,
-    ),
-    child: Container(
-      height: 50, // Fixed height for tabs
-      child: TabBar(
-        controller: _tabController,
-        indicator: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-                               color: Color(AppColors.primary),
 
-          
-          boxShadow: [
-            BoxShadow(
-              color: Color(AppColors.primary).withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
+            const SizedBox(height: 15),
+
+            // Solution 1: Using Container with fixed tab sizes
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  highlightColor: Colors.transparent,
+                  splashColor: Colors.transparent,
+                ),
+                child: Container(
+                  height: 50, // Fixed height for tabs
+                  child: TabBar(
+                    controller: _tabController,
+                    indicator: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      color: Color(AppColors.primary),
+
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(AppColors.primary).withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    labelColor: Colors.white,
+                    unselectedLabelColor: Colors.grey.shade800,
+                    labelStyle: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 15,
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 5),
+                    dividerColor: Colors.transparent,
+                    isScrollable: false, // This distributes tabs evenly
+                    indicatorSize:
+                        TabBarIndicatorSize
+                            .tab, // Makes indicator match tab size
+                    tabs: [
+                      Container(
+                        width: double.infinity,
+                        child: const Center(child: Text('Duas')),
+                      ),
+                      Container(
+                        width: double.infinity,
+                        child: const Center(child: Text('Hadiths')),
+                      ),
+                      Container(
+                        width: double.infinity,
+                        child: const Center(
+                          child: Text(
+                            'Motivations',
+                            style: TextStyle(fontSize: 14),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ],
-        ),
-        labelColor: Colors.white,
-        unselectedLabelColor: Colors.grey.shade800,
-        labelStyle: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 15,
-        ),
-        unselectedLabelStyle: const TextStyle(
-          fontWeight: FontWeight.w500,
-          fontSize: 15,
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 5),
-        dividerColor: Colors.transparent,
-        isScrollable: false, // This distributes tabs evenly
-        indicatorSize: TabBarIndicatorSize.tab, // Makes indicator match tab size
-        tabs: [
-          Container(
-            width: double.infinity,
-            child: const Center(child: Text('Duas')),
-          ),
-          Container(
-            width: double.infinity,
-            child: const Center(child: Text('Hadiths')),
-          ),
-          Container(
-            width: double.infinity,
-            child: const Center(child: Text('Motivations',style:TextStyle(fontSize: 14))),
-          ),
-        ],
-      ),
-    ),
-  ),
-)
-  ,const SizedBox(height: 20),
-            
+            const SizedBox(height: 20),
+
             // Tab content
             Expanded(
               child: TabBarView(
@@ -132,7 +170,9 @@ Container(
                 children: [
                   // Duas Tab
                   ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 15), // Réduit les marges horizontales pour des cartes plus larges
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                    ), // Réduit les marges horizontales pour des cartes plus larges
                     children: [
                       _buildResourceCard(
                         'Dua for Strength',
@@ -141,7 +181,7 @@ Container(
                         Colors.teal.shade50,
                         Colors.teal,
                         () => _navigateToDetailPage(
-                          context, 
+                          context,
                           'Dua for Strength',
                           'اللَّهُمَّ إِنِّي أَسْأَلُكَ الثَّبَاتَ فِي الْأَمْرِ، وَالْعَزِيمَةَ عَلَى الرُّشْدِ',
                           'O Allah, I ask You for firmness in the matter and determination upon guidance.',
@@ -157,7 +197,7 @@ Container(
                         Colors.blue.shade50,
                         Colors.blue,
                         () => _navigateToDetailPage(
-                          context, 
+                          context,
                           'Dua for Protection',
                           'اللَّهُمَّ اكْفِنِي بِحَلَالِكَ عَنْ حَرَامِكَ، وَأَغْنِنِي بِفَضْلِكَ عَمَّنْ سِوَاكَ',
                           'O Allah, suffice me with what You have allowed instead of what You have forbidden, and make me independent of all others besides You.',
@@ -173,7 +213,7 @@ Container(
                         Colors.purple.shade50,
                         Colors.purple,
                         () => _navigateToDetailPage(
-                          context, 
+                          context,
                           'Dua for Forgiveness',
                           'رَبِّ اغْفِرْ لِي خَطِيئَتِي وَجَهْلِي، وَإِسْرَافِي فِي أَمْرِي كُلِّهِ، وَمَا أَنْتَ أَعْلَمُ بِهِ مِنِّي',
                           'O my Lord! Forgive my sins, my ignorance, my immoderation in my affairs, and all that You know better than I do.',
@@ -189,7 +229,7 @@ Container(
                         Colors.amber.shade50,
                         Colors.amber,
                         () => _navigateToDetailPage(
-                          context, 
+                          context,
                           'Dua for Guidance',
                           'اللَّهُمَّ اهْدِنِي فِيمَنْ هَدَيْتَ، وَعَافِنِي فِيمَنْ عَافَيْتَ، وَتَوَلَّنِي فِيمَنْ تَوَلَّيْتَ',
                           'O Allah, guide me among those whom You have guided, pardon me among those You have pardoned, turn to me in friendship among those on whom You have turned in friendship.',
@@ -200,10 +240,12 @@ Container(
                       ),
                     ],
                   ),
-                  
+
                   // Hadiths Tab
                   ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 15), // Réduit les marges horizontales pour des cartes plus larges
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                    ), // Réduit les marges horizontales pour des cartes plus larges
                     children: [
                       _buildResourceCard(
                         'On Lowering the Gaze',
@@ -212,7 +254,7 @@ Container(
                         Colors.green.shade50,
                         Colors.green,
                         () => _navigateToDetailPage(
-                          context, 
+                          context,
                           'On Lowering the Gaze',
                           '',
                           'The Prophet ﷺ said: "Do not follow a glance with another, for you will be forgiven for the first, but not for the second."',
@@ -228,7 +270,7 @@ Container(
                         Colors.teal.shade50,
                         Colors.teal,
                         () => _navigateToDetailPage(
-                          context, 
+                          context,
                           'On Purity',
                           '',
                           'The Prophet ﷺ said: "Verily, Allah is pure and loves purity."',
@@ -244,7 +286,7 @@ Container(
                         Colors.blue.shade50,
                         Colors.blue,
                         () => _navigateToDetailPage(
-                          context, 
+                          context,
                           'On Self-Control',
                           '',
                           'The Prophet ﷺ said: "The strong person is not the one who can wrestle someone else down. The strong person is the one who can control himself when he is angry."',
@@ -260,7 +302,7 @@ Container(
                         Colors.purple.shade50,
                         Colors.purple,
                         () => _navigateToDetailPage(
-                          context, 
+                          context,
                           'On Repentance',
                           '',
                           'The Prophet ﷺ said: "One who repents from sin is like one who has not sinned."',
@@ -271,10 +313,12 @@ Container(
                       ),
                     ],
                   ),
-                  
+
                   // Motivations Tab
                   ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 15), // Réduit les marges horizontales pour des cartes plus larges
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                    ), // Réduit les marges horizontales pour des cartes plus larges
                     children: [
                       _buildResourceCard(
                         'The Neuroscience of Addiction',
@@ -283,7 +327,7 @@ Container(
                         Colors.orange.shade50,
                         Colors.orange,
                         () => _navigateToDetailPage(
-                          context, 
+                          context,
                           'The Neuroscience of Addiction',
                           '',
                           'How Pornography Affects Your Brain',
@@ -299,7 +343,7 @@ Container(
                         Colors.teal.shade50,
                         Colors.teal,
                         () => _navigateToDetailPage(
-                          context, 
+                          context,
                           'Islamic Perspective on Addiction',
                           '',
                           'Understanding Addiction Through Islamic Teachings',
@@ -308,6 +352,7 @@ Container(
                           Colors.teal,
                         ),
                       ),
+                      // name
                       _buildResourceCard(
                         'Practical Steps to Break Free',
                         'A comprehensive guide with actionable steps to overcome pornography addiction.',
@@ -315,7 +360,7 @@ Container(
                         Colors.blue.shade50,
                         Colors.blue,
                         () => _navigateToDetailPage(
-                          context, 
+                          context,
                           'Practical Steps to Break Free',
                           '',
                           'Actionable Steps to Overcome Addiction',
@@ -331,7 +376,7 @@ Container(
                         Colors.green.shade50,
                         Colors.green,
                         () => _navigateToDetailPage(
-                          context, 
+                          context,
                           'Success Stories',
                           '',
                           'Stories of Hope and Recovery',
@@ -350,13 +395,24 @@ Container(
       ),
     );
   }
-  
-  Widget _buildResourceCard(String title, String content, String subtitle, Color bgColor, Color accentColor, VoidCallback onTap) {
+
+  Widget _buildResourceCard(
+    String title,
+    String content,
+    String subtitle,
+    Color bgColor,
+    Color accentColor,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: double.infinity, // Assure que la carte prend toute la largeur disponible
-        margin: const EdgeInsets.only(bottom: 20), // Augmenté pour plus d'espace entre les cartes
+        width:
+            double
+                .infinity, // Assure que la carte prend toute la largeur disponible
+        margin: const EdgeInsets.only(
+          bottom: 20,
+        ), // Augmenté pour plus d'espace entre les cartes
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [bgColor, Colors.white],
@@ -378,7 +434,9 @@ Container(
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(22), // Padding augmenté pour des cartes plus grandes
+          padding: const EdgeInsets.all(
+            22,
+          ), // Padding augmenté pour des cartes plus grandes
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -396,20 +454,13 @@ Container(
                       textAlign: TextAlign.center, // Texte centré
                     ),
                   ),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: accentColor,
-                  ),
+                  Icon(Icons.arrow_forward_ios, size: 16, color: accentColor),
                 ],
               ),
               const SizedBox(height: 12), // Espace augmenté
               Text(
                 content,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontFamily: "CrimsonText"
-                ),
+                style: const TextStyle(fontSize: 16, fontFamily: "CrimsonText"),
                 textAlign: TextAlign.center, // Texte centré
               ),
               const SizedBox(height: 8), // Espace augmenté
@@ -428,27 +479,28 @@ Container(
       ),
     );
   }
-  
+
   void _navigateToDetailPage(
-    BuildContext context, 
-    String title, 
-    String arabicText, 
-    String translatedText, 
+    BuildContext context,
+    String title,
+    String arabicText,
+    String translatedText,
     String description,
     String category,
     Color color,
   ) {
     Navigator.push(
-      context, 
+      context,
       MaterialPageRoute(
-        builder: (context) => DetailPage(
-          title: title,
-          arabicText: arabicText,
-          translatedText: translatedText,
-          description: description,
-          category: category,
-          color: color,
-        ),
+        builder:
+            (context) => DetailPage(
+              title: title,
+              arabicText: arabicText,
+              translatedText: translatedText,
+              description: description,
+              category: category,
+              color: color,
+            ),
       ),
     );
   }
@@ -507,7 +559,10 @@ class DetailPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center, // Centré
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(20),
@@ -534,7 +589,7 @@ class DetailPage extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Content section
             Padding(
               padding: const EdgeInsets.all(20),
@@ -565,7 +620,7 @@ class DetailPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 20),
                   ],
-                  
+
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
@@ -591,30 +646,24 @@ class DetailPage extends StatelessWidget {
                       textAlign: TextAlign.center, // Texte centré
                     ),
                   ),
-                  
+
                   const SizedBox(height: 30),
-                  
+
                   const Text(
                     'Understanding & Application',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center, // Texte centré
                   ),
                   const SizedBox(height: 15),
-                  
+
                   Text(
                     description,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      height: 1.6,
-                    ),
+                    style: const TextStyle(fontSize: 16, height: 1.6),
                     textAlign: TextAlign.center, // Texte centré
                   ),
-                  
+
                   const SizedBox(height: 30),
-                  
+
                   // Bouton "Save to Favorites" supprimé comme demandé
                 ],
               ),

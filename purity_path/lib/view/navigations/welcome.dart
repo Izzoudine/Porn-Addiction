@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:purity_path/utils/consts.dart';
 import 'package:purity_path/utils/routes/routes_name.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -12,55 +16,94 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
-  zero() {}
-  /*
-  Future<UserCredential?> _signInWithGoogle() async {
+  Future<void> signInWithGoogle(BuildContext context) async {
     try {
-      setState(() {
-        _isLoading = true;
-      });
-
-      // Trigger the authentication flow
+      setState(() => _isLoading = true);
+      // Trigger Google Sign-In
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-
       if (googleUser == null) {
-        setState(() {
-          _isLoading = false;
-        });
-        return null;
+        setState(() => _isLoading = false);
+        return;
       }
+      // Obtain auth details
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
-      // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-
-      // Create a new credential
+      // Create Firebase credential
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      // Once signed in, navigate to the questionnaire intro page
-      UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-      
-      // Navigate to questionnaire intro page
-      if (context.mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const QuestionnaireIntroPage()),
-        );
-      }
-      
-      return userCredential;
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sign-in failed: ${e.toString()}')),
+      // Sign in to Firebase
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(
+        credential,
       );
-      setState(() {
-        _isLoading = false;
+
+      // Save to Real-Time Database
+      final database = FirebaseDatabase.instance.ref();
+      await database.child('users/${userCredential.user!.uid}').set({
+        'name': userCredential.user!.displayName,
+        'email': userCredential.user!.email,
+        'createdAt': ServerValue.timestamp,
+        'lastActive': ServerValue.timestamp,
+        'startDate': null,
       });
-      return null;
+
+      // Save to Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .set({
+            'name': userCredential.user!.displayName ?? '',
+            'email': userCredential.user!.email ?? '',
+            'createdAt': FieldValue.serverTimestamp(),
+            'lastActive': FieldValue.serverTimestamp(),
+            'triggers': '',
+            'frequency': '',
+            'motivation': '',
+            'cleanStreak': 0,
+            'totalCleanDays': 0,
+            'startDate': null,
+            'achievedGoals': [],
+            'currentGoalId': '',
+            'hasCompletedQuestionnaire': false,
+          }, SetOptions(merge: true));
+
+      // Check if the widget is still mounted before showing SnackBar
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Signed in as ${userCredential.user!.email}')),
+      );
+
+      // Navigate to the next screen after sign-in
+      if (mounted) {
+        Navigator.pushNamed(context, RoutesName.questionnaireIntro);
+      }
+    } catch (e) {
+      if (e.hashCode == 'network_error') {
+        print("This is our${e.hashCode}");
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Sign-in failed: $e')));
+        }
+      }
+      print('Google Sign-In error: $e');
+      // Check if the widget is still mounted before showing SnackBar
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Sign-in failed: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
-*/
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -119,23 +162,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
 
-                const SizedBox(height: 16),
-
-                // Purpose of the app
-                /*             const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  child: Text(
-                    'Your companion on the journey to purity and spiritual growth through Islamic principles',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
-                      height: 1.4,
-                    ),
-                  ),
-                ),
-*/
-                const SizedBox(height: 10),
+                const SizedBox(height: 16), const SizedBox(height: 10),
 
                 // App illustration
                 Expanded(
@@ -199,7 +226,8 @@ class _LoginPageState extends State<LoginPage> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : zero,
+                    onPressed:
+                        _isLoading ? null : () => signInWithGoogle(context),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue.shade400,
                       foregroundColor: Colors.white,
@@ -233,10 +261,7 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: () {
                     // Handle existing user login
                     //   _signInWithGoogle();
-                    Navigator.pushNamed(
-                      context,
-                   RoutesName.questionnaireIntro
-                    );
+                    Navigator.pushNamed(context, RoutesName.questionnaireIntro);
                   },
                   child: const Text(
                     "Continue as a guest",

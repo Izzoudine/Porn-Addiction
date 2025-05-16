@@ -3,11 +3,11 @@ import 'package:purity_path/utils/consts.dart';
 import 'package:purity_path/utils/routes/routes_name.dart';
 
 class GoalsInformation extends StatefulWidget {
-  final Map<String, dynamic> responses;
+  //final Map<String, dynamic> responses;
 
   const GoalsInformation({
     Key? key,
-    required this.responses,
+   // required this.responses,
   }) : super(key: key);
 
   @override
