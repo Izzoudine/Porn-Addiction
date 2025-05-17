@@ -29,7 +29,7 @@ class DailiesUpdater {
       final prefs = await SharedPreferences.getInstance();
       final lastUpdateTime = prefs.getInt('last_dailies_update_time') ?? 0;
       final currentTime = DateTime.now().millisecondsSinceEpoch;
-      
+
       // If it's been more than 24 hours since last update check, check again
       if (currentTime - lastUpdateTime > 24 * 60 * 60 * 1000) {
         final updated = await DailiesManager.checkUpdateAndFetchData();
@@ -37,6 +37,8 @@ class DailiesUpdater {
           // If updated successfully, save the update time
           await prefs.setInt('last_dailies_update_time', currentTime);
         }
+      } else {
+        print("Time has not passed");
       }
     } catch (e) {
       print('Error checking for updates on start: $e');
@@ -47,45 +49,51 @@ class DailiesUpdater {
   static Future<void> showUpdateDialog(BuildContext context) async {
     try {
       // First check if update is needed
-      final verifySnapshot = await FirebaseFirestore.instance
-          .collection('admin')
-          .doc('verify data')
-          .get();
-      
+      final verifySnapshot =
+          await FirebaseFirestore.instance
+              .collection('admin')
+              .doc('verify data')
+              .get();
+
       final needsUpdate = verifySnapshot.data()?['update data'] ?? false;
-      
+
       if (!needsUpdate) {
-        return ;
+        return;
       }
-      
+
       // Show dialog to user
-      final shouldUpdate = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Update Available'),
-          content: Text('New content is available. Would you like to update now?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text('Later'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text('Update Now'),
-            ),
-          ],
-        ),
-      ) ?? false;
-      
+      final shouldUpdate =
+          await showDialog<bool>(
+            context: context,
+            builder:
+                (context) => AlertDialog(
+                  title: Text('Update Available'),
+                  content: Text(
+                    'New content is available. Would you like to update now?',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: Text('Later'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: Text('Update Now'),
+                    ),
+                  ],
+                ),
+          ) ??
+          false;
+
       if (shouldUpdate) {
         // User agreed to update, so force update
         return await forceUpdateDailies();
       }
-      
-      return ;
+
+      return;
     } catch (e) {
       print('Error showing update dialog: $e');
-      return ;
+      return;
     }
   }
 }

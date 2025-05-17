@@ -1,8 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../data/services/accessibility_service.dart';
 
-class AccessibilityInfoPage extends StatelessWidget {
-  const AccessibilityInfoPage({super.key});
+class AccessibilityInfoPage extends StatefulWidget {
+  @override
+  _AccessibilityPermissionScreenState createState() => _AccessibilityPermissionScreenState();
+}
+
+class _AccessibilityPermissionScreenState extends State<AccessibilityInfoPage> {
+ 
+  bool _isAccessibilityEnabled = false;
+  String _errorMessage = '';
+  
+  Future<void> _checkAccessibilityStatus() async {
+    try {
+      final isEnabled =
+          await AccessibilityService.isAccessibilityServiceEnabled();
+      setState(() {
+        _isAccessibilityEnabled = isEnabled;
+        _errorMessage = '';
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error checking accessibility: $e';
+      });
+    }
+  }
+
+ 
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAccessibilityStatus();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,9 +76,9 @@ class AccessibilityInfoPage extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Title
               const Center(
                 child: Text(
@@ -60,30 +91,25 @@ class AccessibilityInfoPage extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Description
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: const Color(0xFFEFF6FF),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFFBFDBFE),
-                  ),
+                  border: Border.all(color: const Color(0xFFBFDBFE)),
                 ),
                 child: const Text(
                   'Our app needs accessibility permission to monitor and block inappropriate applications and content. This is a critical permission that allows us to protect you from harmful content.',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Color(0xFF1F2937),
-                  ),
+                  style: TextStyle(fontSize: 16, color: Color(0xFF1F2937)),
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // What we do section
               const Text(
                 'What We Do With This Permission',
@@ -93,29 +119,32 @@ class AccessibilityInfoPage extends StatelessWidget {
                   color: Color(0xFF1F2937),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               _buildInfoItem(
                 icon: Icons.block,
                 title: 'Block Inappropriate Apps',
-                description: 'We detect and block access to adult applications and content.',
+                description:
+                    'We detect and block access to adult applications and content.',
               ),
-              
+
               _buildInfoItem(
                 icon: Icons.timer,
                 title: 'Monitor Screen Time',
-                description: 'We track app usage to enforce time limits and schedules.',
+                description:
+                    'We track app usage to enforce time limits and schedules.',
               ),
-              
+
               _buildInfoItem(
                 icon: Icons.shield,
                 title: 'Protect Against Harmful Content',
-                description: 'We prevent access to websites with inappropriate content.',
+                description:
+                    'We prevent access to websites with inappropriate content.',
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Privacy commitment
               Container(
                 padding: const EdgeInsets.all(16),
@@ -132,10 +161,7 @@ class AccessibilityInfoPage extends StatelessWidget {
                   children: [
                     const Row(
                       children: [
-                        Icon(
-                          Icons.security,
-                          color: Colors.white,
-                        ),
+                        Icon(Icons.security, color: Colors.white),
                         SizedBox(width: 8),
                         Text(
                           'Our Privacy Commitment',
@@ -153,21 +179,18 @@ class AccessibilityInfoPage extends StatelessWidget {
                       '• We do NOT track your location\n'
                       '• We do NOT share any information with third parties\n'
                       '• All content filtering happens directly on your device',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white,
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.white),
                     ),
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Enable button
               ElevatedButton(
                 onPressed: () {
-                  // Open accessibility settings
+              
                   openAccessibilitySettings();
                 },
                 style: ElevatedButton.styleFrom(
@@ -180,15 +203,12 @@ class AccessibilityInfoPage extends StatelessWidget {
                 ),
                 child: const Text(
                   'Enable Accessibility Service',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Skip button
               TextButton(
                 onPressed: () {
@@ -197,13 +217,11 @@ class AccessibilityInfoPage extends StatelessWidget {
                 child: const Center(
                   child: Text(
                     'Skip for now (Limited Protection)',
-                    style: TextStyle(
-                      color: Color(0xFF6B7280),
-                    ),
+                    style: TextStyle(color: Color(0xFF6B7280)),
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 16),
             ],
           ),
@@ -228,11 +246,7 @@ class AccessibilityInfoPage extends StatelessWidget {
               color: const Color(0xFFEFF6FF),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              color: const Color(0xFF3B82F6),
-              size: 24,
-            ),
+            child: Icon(icon, color: const Color(0xFF3B82F6), size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -250,10 +264,7 @@ class AccessibilityInfoPage extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   description,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -264,20 +275,14 @@ class AccessibilityInfoPage extends StatelessWidget {
   }
 
   void openAccessibilitySettings() async {
-    const platform = MethodChannel('app.content_guardian/accessibility');
     try {
-      await platform.invokeMethod('openAccessibilitySettings');
-    } on PlatformException catch (_) {
-      // Fallback to manual instructions if the method channel fails
-      // In a real app, you would implement platform-specific code to open settings
-      debugPrint('Failed to open accessibility settings directly');
-      
-      // In a real app, you would use something like this:
-      // On Android:
-      // await platform.invokeMethod('openAccessibilitySettings');
-      // 
-      // Or use a package like app_settings:
-      // await AppSettings.openAccessibilitySettings();
+      await AccessibilityService.requestAccessibilityPermission();
+      await Future.delayed(Duration(seconds: 1));
+      await _checkAccessibilityStatus();
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error requesting accessibility: $e';
+      });
     }
   }
 }

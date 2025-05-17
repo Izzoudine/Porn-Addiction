@@ -25,7 +25,7 @@ class AppPages {
       case RoutesName.motivations:
         return MaterialPageRoute(builder: (context) => const Motivations());
       case RoutesName.accessibility:
-        return MaterialPageRoute(builder: (context) => const AccessibilityInfoPage());
+        return MaterialPageRoute(builder: (context) =>  AccessibilityInfoPage());
       case RoutesName.welcome:
         return MaterialPageRoute(builder: (context) => const LoginPage());
       case RoutesName.questionnaireIntro:

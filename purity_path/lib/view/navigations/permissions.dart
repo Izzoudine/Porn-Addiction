@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:purity_path/data/services/notification_service.dart';
 import 'package:purity_path/utils/consts.dart';
 import 'package:purity_path/utils/routes/routes_name.dart';
 import '../../data/models/permission_model.dart';
@@ -125,11 +126,12 @@ class _PermissionsScreenState extends State<PermissionsScreen>
         padding: const EdgeInsets.all(16.0),
         child: ElevatedButton(
           onPressed: () {
-             Navigator.pushNamedAndRemoveUntil(
-                                  context,
-                                  RoutesName.navigation,(Route<dynamic> route) => false
-                                );
-       /*     final allGranted = _permissions.every(
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              RoutesName.navigation,
+              (Route<dynamic> route) => false,
+            );
+            /*     final allGranted = _permissions.every(
               (item) => item.status?.isGranted ?? false || item.isAccessibility,
             );
 
@@ -309,98 +311,107 @@ class _PermissionsScreenState extends State<PermissionsScreen>
               final item = _permissions[index];
               final isGranted = item.status?.isGranted ?? false;
 
-              return Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                  border: Border.all(
-                    color:
-                        isGranted
-                            ? const Color(0xFFD1FAE5)
-                            : Colors.grey.withOpacity(0.2),
-                    width: isGranted ? 2 : 1,
-                  ),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
-                  child: InkWell(
-                    onTap: () => _requestPermission(item),
+              return GestureDetector(
+                onTap: () {
+                  NotificattionService.requestPermissions();
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color: item.color.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(item.icon, color: item.color, size: 28),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.title,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1F2937),
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  item.description,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          if (item.isAccessibility)
-                            const Icon(
-                              Icons.arrow_forward_ios,
-                              color: Color(AppColors.secondary),
-                              size: 16,
-                            )
-                          else
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                    border: Border.all(
+                      color:
+                          isGranted
+                              ? const Color(0xFFD1FAE5)
+                              : Colors.grey.withOpacity(0.2),
+                      width: isGranted ? 2 : 1,
+                    ),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                    child: InkWell(
+                      onTap: () => _requestPermission(item),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
                             Container(
-                              width: 24,
-                              height: 24,
+                              width: 56,
+                              height: 56,
                               decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color:
-                                    isGranted
-                                        ? const Color(0xFF10B981)
-                                        : Colors.grey[300],
+                                color: item.color.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Center(
-                                child: Icon(
-                                  isGranted
-                                      ? Icons.check
-                                      : Icons.arrow_forward_ios,
-                                  color: Colors.white,
-                                  size: isGranted ? 16 : 12,
-                                ),
+                              child: Icon(
+                                item.icon,
+                                color: item.color,
+                                size: 28,
                               ),
                             ),
-                        ],
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.title,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF1F2937),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    item.description,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (item.isAccessibility)
+                              const Icon(
+                                Icons.arrow_forward_ios,
+                                color: Color(AppColors.secondary),
+                                size: 16,
+                              )
+                            else
+                              Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color:
+                                      isGranted
+                                          ? const Color(0xFF10B981)
+                                          : Colors.grey[300],
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    isGranted
+                                        ? Icons.check
+                                        : Icons.arrow_forward_ios,
+                                    color: Colors.white,
+                                    size: isGranted ? 16 : 12,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

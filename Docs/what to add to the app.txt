@@ -15,3 +15,10 @@ what to add to the app
 -Ask about the addiction at the begining 
 -Personalize depending on the level of the addiction
 
+-load save and display the lessons
+-take care of the objectifs 4 days then 1 week...
+-only after objectifs the blocking will stop 
+-permissions
+-profile
+
+
