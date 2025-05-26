@@ -1,15 +1,12 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:purity_path/data/services/permissions_service.dart';
+import 'package:purity_path/utils/routes/routes_name.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'acceptance.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../data/models/daily_model.dart';
-import 'dailies_manager.dart';
 
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
@@ -30,7 +27,8 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   Timer? _countUpdateTimer;
   DateTime? _lastRelapseDate;
   bool _hasStartedJourney = false;
- 
+  bool _allPermissionsGranted = false;
+  Future<bool>? _permissionFuture;
 
   List<Map<String, String>> dailyContent = [
     {
@@ -54,6 +52,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _permissionFuture = checkPermission();
     _loadData();
     today = DateFormat('yyyy-MM-dd').format(DateTime.now());
     _checkAndUpdateDailyContent();
@@ -82,15 +81,34 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     }
   }
 
-  void start() async {
-    final user = FirebaseAuth.instance.currentUser;
-    await FirebaseFirestore.instance.collection("users").doc(user!.uid).update({
-      'startDate': FieldValue.serverTimestamp(),
-    });
-    final database = FirebaseDatabase.instance.ref();
-    await database.child('users/${user.uid}').update({
-      'startDate': ServerValue.timestamp,
-    });
+  Future<void> _checkPermission() async {
+    final result = await checkPermission();
+    if (mounted) {
+      setState(() {
+        _allPermissionsGranted = result;
+      });
+    }
+  }
+
+  Future<bool> checkPermission() async {
+    try {
+      final permitAccess =
+          await PermissionService.isAccessibilityServiceEnabled();
+      final permitNotifications =
+          await PermissionService.isNotificationPermissionGranted();
+      final permitBattery =
+          await PermissionService.isIgnoringBatteryOptimizations();
+      return permitAccess && permitNotifications && permitBattery;
+    } catch (e) {
+      print('Error checking permissions: $e');
+      return false;
+    }
+  }
+
+  void _navigateToPermissions() async {
+    final result = await Navigator.pushNamed(context, RoutesName.permissions);
+    setState(() {}); // Refresh UI to recheck permissions
+    if (result == true) {}
   }
 
   void _startCleanTimeCounter() {
@@ -163,10 +181,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     });
   }
 
-  
-
   Future<void> _loadData() async {
-
     final prefs = await SharedPreferences.getInstance();
     final lastRelapse =
         prefs.getString('lastRelapse') ?? DateTime.now().toIso8601String();
@@ -225,7 +240,6 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   }
 
   void _navigateToAcceptancePage() async {
-    start();
     final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const AcceptancePage()),
@@ -245,13 +259,112 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     }
   }
 
+  Widget _buildPermissionNotification(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.orange.shade100, Colors.red.shade100],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.orange.shade300, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade200,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.warning_rounded,
+                  color: Colors.orange.shade800,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Permissions Required',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade800,
+                      ),
+                    ),
+                    Text(
+                      'Some permissions are missing for full protection.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.orange.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: _navigateToPermissions,
+            icon: const Icon(Icons.settings, size: 20),
+            label: const Text('Grant Permissions'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange.shade600,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              minimumSize: const Size(double.infinity, 48),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            // App title and emergency button
+            FutureBuilder<bool>(
+  future: _permissionFuture,
+  builder: (context, snapshot) {
+     if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+                final bool allPermissionsGranted = snapshot.data ?? false;
+                if (!allPermissionsGranted) {
+                  return _buildPermissionNotification(context);
+                }
+                return const SizedBox.shrink();
+  },
+),
+
+              // App title and emergency button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
@@ -269,6 +382,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                 ],
               ),
             ),
+            
 
             // Main content with balanced distribution
             Expanded(

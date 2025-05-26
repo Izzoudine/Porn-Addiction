@@ -51,7 +51,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    
+
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -72,27 +72,19 @@ class _PermissionsScreenState extends State<PermissionsScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    print("App lifecycle state changed: $state");
     if (state == AppLifecycleState.resumed) {
-      print("App resumed - checking accessibility status");
       _refreshPermissions(); // Check all permissions on resume
     }
   }
 
-
   Future<void> _refreshPermissions() async {
-  print("Refreshing all permission statuses...");
-  for (var i = 0; i < 5; i++) { // Poll up to 5 times
     await _checkPermissions();
-    final accessibilityItem = _permissions.firstWhere((item) => item.isAccessibility);
-    if (accessibilityItem.status?.isGranted == true) {
-      print("Accessibility granted, stopping polling");
-      break;
-    }
-    print("Accessibility not granted yet, retrying (${i + 1}/5)");
+    final accessibilityItem = _permissions.firstWhere(
+      (item) => item.isAccessibility,
+    );
+    if (accessibilityItem.status?.isGranted == true) {}
     await Future.delayed(const Duration(seconds: 1));
   }
-}
 
   Future<void> _checkPermissions() async {
     setState(() {
@@ -103,35 +95,37 @@ class _PermissionsScreenState extends State<PermissionsScreen>
     try {
       for (var item in _permissions) {
         if (item.isAccessibility) {
-          final isEnabled = await PermissionService.isAccessibilityServiceEnabled();
-          print('Accessibility status: $isEnabled');
+          final isEnabled =
+              await PermissionService.isAccessibilityServiceEnabled();
           setState(() {
-            item.status = isEnabled ? PermissionStatus.granted : PermissionStatus.denied;
+            item.status =
+                isEnabled ? PermissionStatus.granted : PermissionStatus.denied;
           });
           if (isEnabled) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("Accessibility service is now enabled!"),
-                backgroundColor: Color(0xFF10B981),
-                duration: Duration(seconds: 2),
-              ),
-            );
+            // ScaffoldMessenger.of(context).showSnackBar(
+            //   const SnackBar(
+            //     content: Text("Accessibility service is now enabled!"),
+            //     backgroundColor: Color(0xFF10B981),
+            //     duration: Duration(seconds: 2),
+            //   ),
+            // );
           }
         } else if (item.isBatteryOptimization) {
-          final isIgnoring = await PermissionService.isIgnoringBatteryOptimizations();
-          print('Battery optimization status: $isIgnoring');
+          final isIgnoring =
+              await PermissionService.isIgnoringBatteryOptimizations();
           setState(() {
-            item.status = isIgnoring ? PermissionStatus.granted : PermissionStatus.denied;
+            item.status =
+                isIgnoring ? PermissionStatus.granted : PermissionStatus.denied;
           });
         } else if (item.isNotifications) {
-          final isSending = await PermissionService.isNotificationPermissionGranted();
-          print('Notification status: $isSending');
+          final isSending =
+              await PermissionService.isNotificationPermissionGranted();
           setState(() {
-            item.status = isSending ? PermissionStatus.granted : PermissionStatus.denied;
+            item.status =
+                isSending ? PermissionStatus.granted : PermissionStatus.denied;
           });
         }
       }
-      print("Permission statuses: ${_permissions.map((p) => "${p.title}: ${p.status}").join(", ")}");
     } catch (e) {
       setState(() {
         _errorMessage = 'Error checking permissions: $e';
@@ -152,7 +146,6 @@ class _PermissionsScreenState extends State<PermissionsScreen>
 
     try {
       if (item.isAccessibility) {
-        print("Requesting accessibility permission...");
         await Navigator.pushNamed(context, RoutesName.accessibility);
         await Future.delayed(const Duration(seconds: 2)); // Increased delay
         await _checkPermissions(); // Check all permissions after accessibility
@@ -179,8 +172,8 @@ class _PermissionsScreenState extends State<PermissionsScreen>
   }
 
   int get _grantedPermissionsCount {
-    final count = _permissions.where((item) => item.status?.isGranted ?? false).length;
-    print("Granted permissions count: $count");
+    final count =
+        _permissions.where((item) => item.status?.isGranted ?? false).length;
     return count;
   }
 
@@ -228,53 +221,55 @@ class _PermissionsScreenState extends State<PermissionsScreen>
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16.0),
         child: ElevatedButton(
-          onPressed: _isLoading
-              ? null
-              : () {
-                  final allGranted = _permissions.every(
-                    (item) => item.status?.isGranted ?? false,
-                  );
-                  if (allGranted) {
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      RoutesName.navigation,
-                      (Route<dynamic> route) => false,
+          onPressed:
+              _isLoading
+                  ? null
+                  : () {
+                    final allGranted = _permissions.every(
+                      (item) => item.status?.isGranted ?? false,
                     );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Permissions setup complete!'),
-                        backgroundColor: Color(0xFF10B981),
-                      ),
-                    );
-                  } else {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Permissions Required'),
-                        content: const Text(
-                          'Some permissions are still required for the app to function properly. Please grant them now.',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Later'),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              for (var item in _permissions) {
-                                if (!(item.status?.isGranted ?? false)) {
-                                  _requestPermission(item);
-                                }
-                              }
-                              Navigator.pop(context);
-                            },
-                            child: const Text('Grant Now'),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                },
+                    if (allGranted) {
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        RoutesName.navigation,
+                        (Route<dynamic> route) => false,
+                      );
+                      // ScaffoldMessenger.of(context).showSnackBar(
+                      //   const SnackBar(
+                      //     content: Text('Permissions setup complete!'),
+                      //     backgroundColor: Color(0xFF10B981),
+                      //   ),
+                      // );
+                    } else {
+                      showDialog(
+                        context: context,
+                        builder:
+                            (context) => AlertDialog(
+                              title: const Text('Permissions Required'),
+                              content: const Text(
+                                'Some permissions are still required for the app to function properly. Please grant them now.',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed:
+                                      () => Navigator.pushNamedAndRemoveUntil(
+                                        context,
+                                        RoutesName.navigation,
+                                        (Route<dynamic> route) => false,
+                                      ),
+                                  child: const Text('Later'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text('Grant Now'),
+                                ),
+                              ],
+                            ),
+                      );
+                    }
+                  },
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(AppColors.primary),
             foregroundColor: Colors.white,
@@ -325,9 +320,10 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                 ),
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
-                  value: _permissions.isEmpty
-                      ? 0
-                      : _grantedPermissionsCount / _permissions.length,
+                  value:
+                      _permissions.isEmpty
+                          ? 0
+                          : _grantedPermissionsCount / _permissions.length,
                   backgroundColor: Colors.grey[200],
                   color: const Color(AppColors.primary),
                   minHeight: 8,
@@ -422,9 +418,10 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                       ),
                     ],
                     border: Border.all(
-                      color: isGranted
-                          ? const Color(0xFFD1FAE5)
-                          : Colors.grey.withOpacity(0.2),
+                      color:
+                          isGranted
+                              ? const Color(0xFFD1FAE5)
+                              : Colors.grey.withOpacity(0.2),
                       width: isGranted ? 2 : 1,
                     ),
                   ),
@@ -481,9 +478,10 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                               height: 24,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: isGranted
-                                    ? const Color(0xFF10B981)
-                                    : Colors.grey[300],
+                                color:
+                                    isGranted
+                                        ? const Color(0xFF10B981)
+                                        : Colors.grey[300],
                               ),
                               child: Center(
                                 child: Icon(
