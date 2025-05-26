@@ -1,33 +1,62 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import '../../data/services/accessibility_service.dart';
+import 'package:purity_path/data/services/permissions_service.dart';
+import 'package:purity_path/utils/consts.dart';
 
 class AccessibilityInfoPage extends StatefulWidget {
+  const AccessibilityInfoPage({super.key});
+
   @override
-  _AccessibilityPermissionScreenState createState() => _AccessibilityPermissionScreenState();
+  _AccessibilityInfoPageState createState() => _AccessibilityInfoPageState();
 }
 
-class _AccessibilityPermissionScreenState extends State<AccessibilityInfoPage> {
- 
+class _AccessibilityInfoPageState extends State<AccessibilityInfoPage> {
   bool _isAccessibilityEnabled = false;
   String _errorMessage = '';
-  
+  bool _isLoading = false;
+
   Future<void> _checkAccessibilityStatus() async {
+    setState(() {
+      _isLoading = true;
+    });
     try {
-      final isEnabled =
-          await AccessibilityService.isAccessibilityServiceEnabled();
+      final isEnabled = await PermissionService.isAccessibilityServiceEnabled();
       setState(() {
         _isAccessibilityEnabled = isEnabled;
         _errorMessage = '';
       });
+      if (isEnabled) {
+        Navigator.pop(context, true); // Return to PermissionsScreen
+      }
     } catch (e) {
       setState(() {
         _errorMessage = 'Error checking accessibility: $e';
       });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
- 
+  Future<void> _requestAccessibilityPermission() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+    try {
+      await PermissionService.requestAccessibilityPermission();
+      await Future.delayed(const Duration(seconds: 1));
+      await _checkAccessibilityStatus();
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error requesting accessibility: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -51,7 +80,7 @@ class _AccessibilityPermissionScreenState extends State<AccessibilityInfoPage> {
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF3B82F6)),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context, false),
         ),
       ),
       body: SingleChildScrollView(
@@ -60,6 +89,24 @@ class _AccessibilityPermissionScreenState extends State<AccessibilityInfoPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Error message
+              if (_errorMessage.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    _errorMessage,
+                    style: const TextStyle(color: Colors.red, fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              // Loading indicator
+              if (_isLoading)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
               // Header image
               Center(
                 child: Container(
@@ -76,9 +123,7 @@ class _AccessibilityPermissionScreenState extends State<AccessibilityInfoPage> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 24),
-
               // Title
               const Center(
                 child: Text(
@@ -91,9 +136,7 @@ class _AccessibilityPermissionScreenState extends State<AccessibilityInfoPage> {
                   textAlign: TextAlign.center,
                 ),
               ),
-
               const SizedBox(height: 16),
-
               // Description
               Container(
                 padding: const EdgeInsets.all(16),
@@ -107,9 +150,7 @@ class _AccessibilityPermissionScreenState extends State<AccessibilityInfoPage> {
                   style: TextStyle(fontSize: 16, color: Color(0xFF1F2937)),
                 ),
               ),
-
               const SizedBox(height: 24),
-
               // What we do section
               const Text(
                 'What We Do With This Permission',
@@ -119,32 +160,26 @@ class _AccessibilityPermissionScreenState extends State<AccessibilityInfoPage> {
                   color: Color(0xFF1F2937),
                 ),
               ),
-
               const SizedBox(height: 16),
-
               _buildInfoItem(
                 icon: Icons.block,
                 title: 'Block Inappropriate Apps',
                 description:
                     'We detect and block access to adult applications and content.',
               ),
-
               _buildInfoItem(
                 icon: Icons.timer,
                 title: 'Monitor Screen Time',
                 description:
                     'We track app usage to enforce time limits and schedules.',
               ),
-
               _buildInfoItem(
                 icon: Icons.shield,
                 title: 'Protect Against Harmful Content',
                 description:
                     'We prevent access to websites with inappropriate content.',
               ),
-
               const SizedBox(height: 24),
-
               // Privacy commitment
               Container(
                 padding: const EdgeInsets.all(16),
@@ -184,15 +219,13 @@ class _AccessibilityPermissionScreenState extends State<AccessibilityInfoPage> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 32),
-
               // Enable button
               ElevatedButton(
-                onPressed: () {
-              
-                  openAccessibilitySettings();
-                },
+                onPressed:
+                    _isLoading || _isAccessibilityEnabled
+                        ? null
+                        : _requestAccessibilityPermission,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF3B82F6),
                   foregroundColor: Colors.white,
@@ -201,19 +234,21 @@ class _AccessibilityPermissionScreenState extends State<AccessibilityInfoPage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Enable Accessibility Service',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                child: Text(
+                  _isAccessibilityEnabled
+                      ? 'Accessibility Service Enabled'
+                      : 'Enable Accessibility Service',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-
               const SizedBox(height: 16),
-
               // Skip button
               TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
+                onPressed:
+                    _isLoading ? null : () => Navigator.pop(context, false),
                 child: const Center(
                   child: Text(
                     'Skip for now (Limited Protection)',
@@ -221,7 +256,6 @@ class _AccessibilityPermissionScreenState extends State<AccessibilityInfoPage> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 16),
             ],
           ),
@@ -272,17 +306,5 @@ class _AccessibilityPermissionScreenState extends State<AccessibilityInfoPage> {
         ],
       ),
     );
-  }
-
-  void openAccessibilitySettings() async {
-    try {
-      await AccessibilityService.requestAccessibilityPermission();
-      await Future.delayed(Duration(seconds: 1));
-      await _checkAccessibilityStatus();
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Error requesting accessibility: $e';
-      });
-    }
   }
 }

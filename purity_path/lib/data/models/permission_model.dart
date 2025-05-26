@@ -9,6 +9,8 @@ class PermissionItem {
   final Color color;
   PermissionStatus? status;
   final bool isAccessibility;
+  final bool isBatteryOptimization;
+  final bool isNotifications;
   bool isEnabled;
 
   PermissionItem({
@@ -19,6 +21,8 @@ class PermissionItem {
     required this.color,
     this.status,
     this.isAccessibility = false,
+    this.isBatteryOptimization = false,
+    this.isNotifications = false,
     this.isEnabled = false,
   });
 }
