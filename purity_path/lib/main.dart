@@ -14,7 +14,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   DailiesUpdater.checkForUpdatesOnStart();
-  await DailiesManager.fetchAndSaveDailiesOnce();
   await NotificationService.initialize();
 
   runApp(const MyApp());
