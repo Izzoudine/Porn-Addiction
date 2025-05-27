@@ -1,0 +1,5 @@
+/home/kanta/.pub-cache/hosted/pub.dev/device_policy_controller-0.0.3+1/android/build.gradle. 
+Add in android {namespace 'com.example.device_policy_controller'}
+
+ /home/kanta/.pub-cache/hosted/pub.dev/device_policy_controller-0.0.3+1/android/src/main/AndroidManifest.xml.
+ Remove package="com.itisnajim.device_policy_controller" on the balise of AndroidManifest
