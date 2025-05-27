@@ -1,8 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../data/models/daily_model.dart';
 import 'dailies_manager.dart';
 
 class DailiesUpdater {

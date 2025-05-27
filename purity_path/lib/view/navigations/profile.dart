@@ -10,7 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({Key? key}) : super(key: key);
+  const ProfilePage({super.key});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -20,11 +20,11 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isGuest = false;
   String _userName = "Invité";
   String _userEmail = "";
-  int _cleanDays = 0;
-  int _totalRelapses = 0;
+  final int _cleanDays = 0;
+  final int _totalRelapses = 0;
   DateTime? _lastRelapseDate;
   DateTime? _accountCreationDate;
-  bool _hasStartedJourney = false;
+  final bool _hasStartedJourney = false;
   bool _isLoading = true;
 
   @override
@@ -198,7 +198,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-          automaticallyImplyLeading: false,
+        automaticallyImplyLeading: false,
         title: const Text(
           'Profil',
           style: TextStyle(
@@ -336,33 +336,8 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                         ],
                       ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // Options du profil
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.settings,
-                            size: 20,
-                            color: Color(0xFF2196F3),
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'Options',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF333333),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
+                    ),               
+                    const SizedBox(height: 24),
 
                     // Liste des options
                     Container(
@@ -381,17 +356,18 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: Column(
                         children: [
                           _buildOptionItem(
-                            icon: Icons.notifications_outlined,
-                            title: "Notifications",
+                            icon: Icons.language_outlined,
+                            title: "App Language",
+                            subtitle: "Choose your preferred language",
                             onTap: () {
-                              // Action pour les notifications
+                              // Action pour changer la langue
                             },
                           ),
-                          const Divider(height: 1),
+                            const Divider(height: 1),
                           _buildOptionItem(
-                            icon: Icons.language_outlined,
-                            title: "Langue",
-                            subtitle: "Français",
+                            icon: Icons.security_outlined,
+                            title: "Privacy Settings",
+                            subtitle: "Manage app permissions",
                             onTap: () {
                               // Action pour changer la langue
                             },
@@ -399,7 +375,9 @@ class _ProfilePageState extends State<ProfilePage> {
                           const Divider(height: 1),
                           _buildOptionItem(
                             icon: Icons.help_outline,
-                            title: "Aide et support",
+                            title: "Support & Guidance",
+                            subtitle: "Get help or contact our team",
+
                             onTap: () {
                               // Action pour l'aide
                             },
@@ -407,7 +385,8 @@ class _ProfilePageState extends State<ProfilePage> {
                           const Divider(height: 1),
                           _buildOptionItem(
                             icon: Icons.info_outline,
-                            title: "À propos",
+                            title: "About Purity Path",
+                            subtitle: "Learn about our mission",
                             onTap: () {
                               // Action pour à propos
                             },
@@ -425,8 +404,10 @@ class _ProfilePageState extends State<ProfilePage> {
                         child: ElevatedButton.icon(
                           onPressed: () async {
                             await signOut();
-                                                    Navigator.pop(context);
-    Navigator.pushReplacementNamed(context, RoutesName.welcome);
+                            Navigator.pushReplacementNamed(
+                              context,
+                              RoutesName.welcome,
+                            );
 
                             // Optionally: Navigator.pop(context); or other logic
                           },
@@ -451,9 +432,20 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Future<void> signOut() async {
+Future<void> signOut() async {
+  try {
     await FirebaseAuth.instance.signOut();
+
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.remove('name');
+    await prefs.remove('email'); 
+    await prefs.remove('isGuest'); 
+  } catch (e) {
+    print('Error during sign-out: $e');
+    rethrow; 
   }
+}
 
   Widget _buildStatCard({
     required IconData icon,

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AcceptancePage extends StatelessWidget {
-  const AcceptancePage({Key? key}) : super(key: key);
+  const AcceptancePage({super.key});
 
   Future<void> _startJourney(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();

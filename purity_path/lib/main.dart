@@ -19,7 +19,7 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +37,8 @@ class MyApp extends StatelessWidget {
 }
 
 class AuthenticationWrapper extends StatelessWidget {
+  const AuthenticationWrapper({super.key});
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
@@ -60,7 +62,7 @@ class AuthenticationWrapper extends StatelessWidget {
 class UserDataWrapper extends StatelessWidget {
   final String userId;
 
-  const UserDataWrapper({Key? key, required this.userId}) : super(key: key);
+  const UserDataWrapper({super.key, required this.userId});
 
   @override
   Widget build(BuildContext context) {

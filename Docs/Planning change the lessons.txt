@@ -1,10 +1,8 @@
 Planning 
 -change the lessons
 -validate the lessons
--load the lessons
--display the missing permissions on the home
--possible to continue without accepting it
--possible to login as a guest
+-add more sections on profile
+-load the history
 -choose the program 
 -propose the next one
 -show the evolution

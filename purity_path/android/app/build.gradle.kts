@@ -7,6 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.purity_path"
+    
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 

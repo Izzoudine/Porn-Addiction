@@ -5,6 +5,7 @@ class RoutesName {
   static const String motivations = '/motivations';
   
   static const String accessibility = '/accessibility';
+  static const String admin = '/admin';
   static const String welcome = '/welcome';
   static const String permissions = '/permissions';
   static const String questionnaireManager = '/questionnaireManager';

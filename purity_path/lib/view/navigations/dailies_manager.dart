@@ -52,7 +52,7 @@ class DailiesManager {
         List<DailyContent> contentList = [];
 
         for (var doc in querySnapshot.docs) {
-          final contentData = doc.data() as Map<String, dynamic>;
+          final contentData = doc.data();
           contentList.add(
             DailyContent.fromFirebase(doc.id, contentData, section),
           );
@@ -98,13 +98,13 @@ class DailiesManager {
         final querySnapshot =
             await FirebaseFirestore.instance.collection(section).get();
         for (var doc in querySnapshot.docs) {
-          final contentData = doc.data() as Map<String, dynamic>;
+          final contentData = doc.data();
           contentList.add(
             DailyContent.fromFirebase(doc.id, contentData, section),
           );
         }
         allData[section] = contentList;
-        print("The data is ${contentList}");
+        print("The data is $contentList");
       } catch (e) {
         print('Error fetching /$section: $e');
       }

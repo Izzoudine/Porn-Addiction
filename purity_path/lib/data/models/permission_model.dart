@@ -11,6 +11,7 @@ class PermissionItem {
   final bool isAccessibility;
   final bool isBatteryOptimization;
   final bool isNotifications;
+  final bool isAdmin;
   bool isEnabled;
 
   PermissionItem({
@@ -24,5 +25,6 @@ class PermissionItem {
     this.isBatteryOptimization = false,
     this.isNotifications = false,
     this.isEnabled = false,
+    this.isAdmin = false,
   });
 }

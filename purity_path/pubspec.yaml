@@ -27,6 +27,8 @@ dependencies:
   firebase_database: ^11.3.5
   google_sign_in: ^6.2.1
   flutter_local_notifications: ^19.2.0
+  device_policy_controller: ^0.0.3+1
+  device_policy_manager: ^1.0.0
 
 
 dev_dependencies:

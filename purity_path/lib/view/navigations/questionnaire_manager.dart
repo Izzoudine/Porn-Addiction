@@ -11,7 +11,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class QuestionnaireManager extends StatefulWidget {
-  const QuestionnaireManager({Key? key}) : super(key: key);
+  const QuestionnaireManager({super.key});
 
   @override
   State<QuestionnaireManager> createState() => _QuestionnaireManagerState();

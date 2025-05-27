@@ -38,6 +38,15 @@ class _PermissionsScreenState extends State<PermissionsScreen>
       status: PermissionStatus.denied, // Initialize status
     ),
     PermissionItem(
+      title: 'Device Administrator',
+      description:
+          'Prevents unauthorized app removal and ensures continuous protection.',
+      icon: Icons.admin_panel_settings,
+      color: const Color(0xFFDC2626),
+      isAdmin: true,
+      status: PermissionStatus.denied, // Initialize status
+    ),
+    PermissionItem(
       title: 'Battery Optimization',
       description: 'Allows app to run in background for continuous protection.',
       icon: Icons.battery_charging_full,
@@ -101,16 +110,16 @@ class _PermissionsScreenState extends State<PermissionsScreen>
             item.status =
                 isEnabled ? PermissionStatus.granted : PermissionStatus.denied;
           });
-          if (isEnabled) {
-            // ScaffoldMessenger.of(context).showSnackBar(
-            //   const SnackBar(
-            //     content: Text("Accessibility service is now enabled!"),
-            //     backgroundColor: Color(0xFF10B981),
-            //     duration: Duration(seconds: 2),
-            //   ),
-            // );
-          }
-        } else if (item.isBatteryOptimization) {
+      
+        }  else  if (item.isAdmin) {
+          final isEnabled =
+              await PermissionService.isDeviceAdminPermissionGranted();
+          setState(() {
+            item.status =
+                isEnabled ? PermissionStatus.granted : PermissionStatus.denied;
+          });
+       
+        }else if (item.isBatteryOptimization) {
           final isIgnoring =
               await PermissionService.isIgnoringBatteryOptimizations();
           setState(() {
@@ -147,14 +156,19 @@ class _PermissionsScreenState extends State<PermissionsScreen>
     try {
       if (item.isAccessibility) {
         await Navigator.pushNamed(context, RoutesName.accessibility);
-        await Future.delayed(const Duration(seconds: 2)); // Increased delay
-        await _checkPermissions(); // Check all permissions after accessibility
+        await Future.delayed(const Duration(seconds: 2));
+        await _checkPermissions();
       } else if (item.isBatteryOptimization) {
         await PermissionService.requestIgnoreBatteryOptimizations();
         await Future.delayed(const Duration(seconds: 2));
         await _checkPermissions();
       } else if (item.isNotifications) {
         await PermissionService.requestNotificationPermission();
+        await Future.delayed(const Duration(seconds: 2));
+        await _checkPermissions();
+      } else if (item.isAdmin) {
+        print("THis is the admin");
+        await Navigator.pushNamed(context, RoutesName.admin);
         await Future.delayed(const Duration(seconds: 2));
         await _checkPermissions();
       }

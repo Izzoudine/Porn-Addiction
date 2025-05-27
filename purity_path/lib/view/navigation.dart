@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:purity_path/utils/consts.dart';
-import 'navigations/objectifs.dart';
 import 'navigations/goals.dart';
 //import 'navigations/home.dart';
 import 'navigations/home2.dart';

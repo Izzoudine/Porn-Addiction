@@ -105,6 +105,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.11"
+  device_policy_controller:
+    dependency: "direct main"
+    description:
+      name: device_policy_controller
+      sha256: "9310744921d71b6d52e3899d26eef2797c07e5ac13ce924b269dad4583f4246d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.3+1"
+  device_policy_manager:
+    dependency: "direct main"
+    description:
+      name: device_policy_manager
+      sha256: "4fa1c4d2341656d260cbfae2e9c1ac3c21f1f40edfb5b1b8b1b3f59ef68bde86"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   equatable:
     dependency: transitive
     description:

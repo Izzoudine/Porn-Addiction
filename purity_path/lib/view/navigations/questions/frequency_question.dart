@@ -10,13 +10,13 @@ class FrequencyQuestion extends StatefulWidget {
   final bool canProceed;
 
   const FrequencyQuestion({
-    Key? key,
+    super.key,
     required this.selectedValue,
     required this.onValueChanged,
     required this.onNext,
     required this.onPrevious,
     required this.canProceed,
-  }) : super(key: key);
+  });
 
   @override
   State<FrequencyQuestion> createState() => _FrequencyQuestionState();
@@ -272,7 +272,7 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
                         left: 30,
                         right: 30,
                         top: 39,
-                        child: Container(
+                        child: SizedBox(
                           height: 4,
                           child: Row(
                             children: [

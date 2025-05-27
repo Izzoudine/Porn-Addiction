@@ -3,7 +3,7 @@ import 'package:purity_path/utils/consts.dart';
 import 'package:purity_path/utils/routes/routes_name.dart';
 
 class QuestionnaireIntroPage extends StatelessWidget {
-  const QuestionnaireIntroPage({Key? key}) : super(key: key);
+  const QuestionnaireIntroPage({super.key});
 
   @override
   Widget build(BuildContext context) {

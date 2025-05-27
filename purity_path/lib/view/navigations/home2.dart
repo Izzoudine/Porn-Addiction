@@ -9,7 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'acceptance.dart';
 
 class Home extends StatefulWidget {
-  const Home({Key? key}) : super(key: key);
+  const Home({super.key});
 
   @override
   State<Home> createState() => _HomeState();
@@ -21,13 +21,13 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   int cleanMinutes = 0;
   int cleanSeconds = 0;
   int contentIndex = 0;
-  PageController _pageController = PageController(initialPage: 0);
+  final PageController _pageController = PageController(initialPage: 0);
   String today = '';
   Timer? _autoScrollTimer;
   Timer? _countUpdateTimer;
   DateTime? _lastRelapseDate;
   bool _hasStartedJourney = false;
-  bool _allPermissionsGranted = false;
+  final bool _allPermissionsGranted = false;
   Future<bool>? _permissionFuture;
 
   List<Map<String, String>> dailyContent = [

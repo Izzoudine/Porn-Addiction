@@ -5,6 +5,7 @@ import 'package:purity_path/view/lessons/duas.dart';
 import 'package:purity_path/view/lessons/haddiths.dart';
 import 'package:purity_path/view/lessons/motivations.dart';
 import 'package:purity_path/view/navigations/accessibility_info.dart';
+import 'package:purity_path/view/navigations/admin_info.dart';
 import 'package:purity_path/view/navigations/welcome.dart';
 import 'package:purity_path/view/navigations/permissions.dart';
 import 'package:purity_path/view/navigations/questionnaire_manager.dart';
@@ -26,6 +27,9 @@ class AppPages {
         return MaterialPageRoute(builder: (context) => const Motivations());
       case RoutesName.accessibility:
         return MaterialPageRoute(builder: (context) =>  AccessibilityInfoPage());
+      case RoutesName.admin:
+        return MaterialPageRoute(builder: (context) =>  AdminInfoPage());  
+        
       case RoutesName.welcome:
         return MaterialPageRoute(builder: (context) => const LoginPage());
       case RoutesName.questionnaireIntro:

@@ -4,7 +4,7 @@ import 'package:purity_path/data/models/daily_model.dart'; // Adjust import for 
 import 'package:purity_path/view/navigations/dailies_manager.dart'; // Adjust import for DailiesManager
 
 class Lessons extends StatefulWidget {
-  const Lessons({Key? key}) : super(key: key);
+  const Lessons({super.key});
 
   @override
   State<Lessons> createState() => _LessonsScreenState();
@@ -81,7 +81,7 @@ class _LessonsScreenState extends State<Lessons>
                   highlightColor: Colors.transparent,
                   splashColor: Colors.transparent,
                 ),
-                child: Container(
+                child: SizedBox(
                   height: 50,
                   child: TabBar(
                     controller: _tabController,
@@ -111,15 +111,15 @@ class _LessonsScreenState extends State<Lessons>
                     isScrollable: false,
                     indicatorSize: TabBarIndicatorSize.tab,
                     tabs: [
-                      Container(
+                      SizedBox(
                         width: double.infinity,
                         child: const Center(child: Text('Duas')),
                       ),
-                      Container(
+                      SizedBox(
                         width: double.infinity,
                         child: const Center(child: Text('Hadiths')),
                       ),
-                      Container(
+                      SizedBox(
                         width: double.infinity,
                         child: const Center(child: Text('Motivations', style: TextStyle(fontSize: 14))),
                       ),
@@ -283,14 +283,14 @@ class DetailPage extends StatelessWidget {
   final Color color;
 
   const DetailPage({
-    Key? key,
+    super.key,
     required this.title,
     required this.arabicText,
     required this.translatedText,
     required this.description,
     required this.category,
     required this.color,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -6,9 +6,9 @@ class GoalsInformation extends StatefulWidget {
   //final Map<String, dynamic> responses;
 
   const GoalsInformation({
-    Key? key,
+    super.key,
    // required this.responses,
-  }) : super(key: key);
+  });
 
   @override
   State<GoalsInformation> createState() => _GoalsInformationState();
@@ -152,7 +152,7 @@ class _GoalsInformationState extends State<GoalsInformation> with SingleTickerPr
                             ],
                           ),
                           const SizedBox(height: 16),
-                          const Center(child:         const Text(
+                          const Center(child:         Text(
                             'Breaking a habit typically takes anywhere from 18 to 66 days, depending on the person, the habit, and the consistency of effort.',
                             style: TextStyle(
                               fontSize: 15,
