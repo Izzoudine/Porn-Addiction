@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:purity_path/data/services/notification_service.dart';
 import 'package:purity_path/utils/routes/routes.dart';
 import 'package:purity_path/utils/routes/routes_name.dart';
-import 'package:purity_path/view/navigations/dailies_manager.dart';
 import 'package:purity_path/view/navigations/dailiy_update.dart';
 import 'firebase_options.dart';
 import 'package:purity_path/view/navigations/welcome.dart';

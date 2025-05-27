@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:purity_path/utils/consts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'questions/frequency_question.dart';
 import 'questions/triggers_question.dart';
 import 'questions/motivation_question.dart';
@@ -39,37 +42,37 @@ class _QuestionnaireManagerState extends State<QuestionnaireManager> {
         curve: Curves.easeInOut,
       );
     } else {
-      // Navigate to goals information page
-      final user = FirebaseAuth.instance.currentUser;
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user!.uid)
-          .update({
-            'hasCompletedQuestionnaire': true,
-            'triggers': triggerResponse == 'Other'
-                          ? otherTrigger
-                          : triggerResponse,
-            'frequency': frequencyResponse,
-            'motivation': motivationResponse,
-          });
+      final prefs = await SharedPreferences.getInstance();
+      final isGuest = prefs.getBool("isGuest") ?? false;
 
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder:
-              (context) => GoalsInformation(
-         /*       responses: {
-                  'frequency': frequencyResponse,
-                  'trigger':
-                      triggerResponse == 'Other'
-                          ? otherTrigger
-                          : triggerResponse,
-                  'motivation': motivationResponse,
-                  // Set default value for reminders since we removed the question
-                  'wantReminders': true,
-                },
-            */  ),
-        ),
-      );
+      if (isGuest) {
+        final Map<String, dynamic> triggerData = {
+          'triggers':
+              triggerResponse == 'Other' ? otherTrigger : triggerResponse,
+          'frequency': frequencyResponse,
+          'motivation': motivationResponse,
+        };
+        await prefs.setString("guestChoice", jsonEncode(triggerData));
+
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => GoalsInformation()),
+        );
+      } else {
+      final user = FirebaseAuth.instance.currentUser;
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user!.uid)
+            .update({
+              'hasCompletedQuestionnaire': true,
+              'triggers':
+                  triggerResponse == 'Other' ? otherTrigger : triggerResponse,
+              'frequency': frequencyResponse,
+              'motivation': motivationResponse,
+            });
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => GoalsInformation()),
+        );
+      }
     }
   }
 

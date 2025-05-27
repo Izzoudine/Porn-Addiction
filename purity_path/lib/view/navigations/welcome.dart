@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -39,6 +40,11 @@ class _LoginPageState extends State<LoginPage> {
       final userCredential = await FirebaseAuth.instance.signInWithCredential(
         credential,
       );
+      final prefs = await SharedPreferences.getInstance();
+      String? name = userCredential.user!.displayName;
+      String? email = userCredential.user!.email;
+      prefs.setString("name",name!);
+      prefs.setString("email",email!);
 
       // Save to Real-Time Database
       final database = FirebaseDatabase.instance.ref();
@@ -55,8 +61,8 @@ class _LoginPageState extends State<LoginPage> {
           .collection('users')
           .doc(userCredential.user!.uid)
           .set({
-            'name': userCredential.user!.displayName ?? '',
-            'email': userCredential.user!.email ?? '',
+            'name': name,
+            'email': email ?? '',
             'createdAt': FieldValue.serverTimestamp(),
             'lastActive': FieldValue.serverTimestamp(),
             'triggers': '',
@@ -102,6 +108,11 @@ class _LoginPageState extends State<LoginPage> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  Future<void> save() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool("isGuest", true);
   }
 
   @override
@@ -259,9 +270,15 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: () {
-                    // Handle existing user login
-                    //   _signInWithGoogle();
                     Navigator.pushNamed(context, RoutesName.questionnaireIntro);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          "Your data is saved temporarily as a guest. Sign in to keep your information safe and available anywhere!",
+                        ),
+                      ),
+                    );
+                    save();
                   },
                   child: const Text(
                     "Continue as a guest",

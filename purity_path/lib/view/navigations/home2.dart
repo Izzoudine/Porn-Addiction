@@ -81,14 +81,6 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     }
   }
 
-  Future<void> _checkPermission() async {
-    final result = await checkPermission();
-    if (mounted) {
-      setState(() {
-        _allPermissionsGranted = result;
-      });
-    }
-  }
 
   Future<bool> checkPermission() async {
     try {
