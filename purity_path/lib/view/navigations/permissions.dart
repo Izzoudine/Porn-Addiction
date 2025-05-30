@@ -18,7 +18,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
   late Animation<double> _fadeAnimation;
   String _errorMessage = '';
   bool _isLoading = false;
-  String test = "Permissions";
+ 
 
   final List<PermissionItem> _permissions = [
     PermissionItem(
@@ -37,6 +37,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
       isAccessibility: true,
       status: PermissionStatus.denied, // Initialize status
     ),
+
     PermissionItem(
       title: 'Device Administrator',
       description:
@@ -47,13 +48,15 @@ class _PermissionsScreenState extends State<PermissionsScreen>
       status: PermissionStatus.denied, // Initialize status
     ),
     PermissionItem(
-      title: 'Battery Optimization',
-      description: 'Allows app to run in background for continuous protection.',
-      icon: Icons.battery_charging_full,
-      color: const Color(0xFFF59E0B),
-      isBatteryOptimization: true,
-      status: PermissionStatus.denied, // Initialize status
+      title: 'Overlay',
+      description:
+          'Prevents unauthorized app removal and ensures continuous protection.',
+      icon: Icons.layers,
+      color: const Color(0xFFDC2626),
+      isOverlay: true, // Renamed from isAdmin
+      status: PermissionStatus.denied,
     ),
+ 
   ];
 
   @override
@@ -96,91 +99,120 @@ class _PermissionsScreenState extends State<PermissionsScreen>
   }
 
   Future<void> _checkPermissions() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = '';
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = '';
+      });
+    }
 
     try {
       for (var item in _permissions) {
         if (item.isAccessibility) {
           final isEnabled =
               await PermissionService.isAccessibilityServiceEnabled();
-          setState(() {
-            item.status =
-                isEnabled ? PermissionStatus.granted : PermissionStatus.denied;
-          });
-      
-        }  else  if (item.isAdmin) {
+          if (mounted) {
+            setState(() {
+              item.status =
+                  isEnabled
+                      ? PermissionStatus.granted
+                      : PermissionStatus.denied;
+            });
+          }
+        } else if (item.isAdmin) {
           final isEnabled =
               await PermissionService.isDeviceAdminPermissionGranted();
-          setState(() {
-            item.status =
-                isEnabled ? PermissionStatus.granted : PermissionStatus.denied;
-          });
-       
-        }else if (item.isBatteryOptimization) {
-          final isIgnoring =
-              await PermissionService.isIgnoringBatteryOptimizations();
-          setState(() {
-            item.status =
-                isIgnoring ? PermissionStatus.granted : PermissionStatus.denied;
-          });
-        } else if (item.isNotifications) {
+          if (mounted) {
+            setState(() {
+              item.status =
+                  isEnabled
+                      ? PermissionStatus.granted
+                      : PermissionStatus.denied;
+            });
+          }
+        } 
+      else if (item.isNotifications) {
           final isSending =
               await PermissionService.isNotificationPermissionGranted();
-          setState(() {
-            item.status =
-                isSending ? PermissionStatus.granted : PermissionStatus.denied;
-          });
+          if (mounted) {
+            setState(() {
+              item.status =
+                  isSending
+                      ? PermissionStatus.granted
+                      : PermissionStatus.denied;
+            });
+          }
+        }
+        else if (item.isOverlay) {
+          final isSending =
+              await PermissionService.isOverlayPermissionGranted();
+          if (mounted) {
+            setState(() {
+              item.status =
+                  isSending
+                      ? PermissionStatus.granted
+                      : PermissionStatus.denied;
+            });
+          }
         }
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Error checking permissions: $e';
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error checking permissions: $e';
+        });
+      }
       print('Permission check error: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   Future<void> _requestPermission(PermissionItem item) async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = '';
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = '';
+      });
+    }
 
     try {
       if (item.isAccessibility) {
+
         await Navigator.pushNamed(context, RoutesName.accessibility);
         await Future.delayed(const Duration(seconds: 2));
         await _checkPermissions();
-      } else if (item.isBatteryOptimization) {
-        await PermissionService.requestIgnoreBatteryOptimizations();
-        await Future.delayed(const Duration(seconds: 2));
-        await _checkPermissions();
-      } else if (item.isNotifications) {
+      }  else if (item.isNotifications) {
         await PermissionService.requestNotificationPermission();
         await Future.delayed(const Duration(seconds: 2));
         await _checkPermissions();
-      } else if (item.isAdmin) {
-        print("THis is the admin");
+      } else if (item.isOverlay) {
+        await PermissionService.requestOverlayPermission();
+        await Future.delayed(const Duration(seconds: 2));
+        await _checkPermissions();
+      }else if (item.isAdmin) {
         await Navigator.pushNamed(context, RoutesName.admin);
         await Future.delayed(const Duration(seconds: 2));
         await _checkPermissions();
       }
+ 
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Error requesting permission: $e';
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error requesting permission: $e';
+        });
+      }
       print('Permission request error: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
       await _checkPermissions(); // Ensure UI reflects latest statuses
     }
   }
@@ -199,7 +231,7 @@ class _PermissionsScreenState extends State<PermissionsScreen>
         backgroundColor: Colors.white,
         elevation: 0,
         title: Text(
-          test,
+          "Permissions",
           style: const TextStyle(
             color: Color(0xFF1F2937),
             fontWeight: FontWeight.bold,

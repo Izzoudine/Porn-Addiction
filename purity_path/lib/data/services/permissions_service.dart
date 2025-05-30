@@ -5,6 +5,24 @@ class PermissionService {
   static const platform = MethodChannel(
     'com.example.purity_path/accessibility',
   );
+
+  // static Future<bool> isDnsFilteringEnabled() async {
+  //   try {
+  //     return await platform.invokeMethod('isDnsFilteringEnabled');
+  //   } catch (e) {
+  //     print('Error checking DNS filtering: $e');
+  //     return false;
+  //   }
+  // }
+
+  // static Future<void> startDnsFiltering() async {
+  //   try {
+  //     await platform.invokeMethod('startDnsFiltering');
+  //   } on PlatformException catch (e) {
+  //     print("Failed to request device admin permission: ${e.message}");
+  //   }
+  // }
+ 
   static Future<bool> requestDeviceAdminPermission(String message) async {
     try {
       return await DevicePolicyManager.requestPermession(message);
@@ -24,9 +42,33 @@ class PermissionService {
     }
   }
 
+  static Future<bool> isOverlayPermissionGranted() async {
+    try {
+      final bool isGranted = await platform.invokeMethod(
+        'isOverlayPermissionGranted',
+      );
+      return isGranted;
+    } catch (e) {
+      print('Error checking overlay permission: $e');
+      return false;
+    }
+  }
+
+  static Future<void> requestOverlayPermission() async {
+    try {
+      await platform.invokeMethod('requestOverlayPermission');
+    } catch (e) {
+      print('Error requesting overlay permission: $e');
+    }
+  }
+
   static Future<void> requestAccessibilityPermission() async {
     try {
+
       await platform.invokeMethod('requestAccessibilityPermission');
+
+      print("After service");
+
     } on PlatformException catch (e) {
       print("Failed to request accessibility permission: ${e.message}");
       rethrow;
@@ -89,6 +131,4 @@ class PermissionService {
       return false;
     }
   }
-
-
 }

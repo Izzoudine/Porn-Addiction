@@ -88,9 +88,11 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
           await PermissionService.isAccessibilityServiceEnabled();
       final permitNotifications =
           await PermissionService.isNotificationPermissionGranted();
-      final permitBattery =
-          await PermissionService.isIgnoringBatteryOptimizations();
-      return permitAccess && permitNotifications && permitBattery;
+      final permitAdmin =
+          await PermissionService.isDeviceAdminPermissionGranted();
+      final permitOverlay =
+          await PermissionService.isOverlayPermissionGranted();    
+      return permitAccess && permitNotifications && permitAdmin && permitOverlay;
     } catch (e) {
       print('Error checking permissions: $e');
       return false;

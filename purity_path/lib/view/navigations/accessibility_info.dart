@@ -18,6 +18,8 @@ class _AccessibilityInfoPageState extends State<AccessibilityInfoPage> {
       _isLoading = true;
     });
     try {
+      print("Beforer requestAcessibility");
+
       final isEnabled = await PermissionService.isAccessibilityServiceEnabled();
       setState(() {
         _isAccessibilityEnabled = isEnabled;
@@ -38,12 +40,19 @@ class _AccessibilityInfoPageState extends State<AccessibilityInfoPage> {
   }
 
   Future<void> _requestAccessibilityPermission() async {
+    print("Entered requestAccess");
     setState(() {
       _isLoading = true;
       _errorMessage = '';
     });
     try {
+      print("Before requestAcessibility");
+
+
       await PermissionService.requestAccessibilityPermission();
+
+
+
       await Future.delayed(const Duration(seconds: 1));
       await _checkAccessibilityStatus();
     } catch (e) {
