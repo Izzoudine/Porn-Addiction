@@ -45,31 +45,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     final userName = prefs.getString('name') ?? "Invité";
     final userEmail = prefs.getString('email') ?? "";
-    // final totalRelapses = prefs.getInt('totalRelapses') ?? 0;
-    // final accountCreationDateStr = prefs.getString('accountCreationDate');
-    // final hasStartedJourney = prefs.getBool('hasStartedJourney') ?? false;
 
-    // final lastRelapseStr = prefs.getString('lastRelapse');
-    // DateTime? lastRelapseDate;
-    // int cleanDays = 0;
-
-    // if (lastRelapseStr != null && hasStartedJourney) {
-    //   lastRelapseDate = DateTime.parse(lastRelapseStr);
-    //   final now = DateTime.now();
-    //   cleanDays = now.difference(lastRelapseDate).inDays;
-    // }
-
-    // // Récupérer ou définir la date de création du compte
-    // DateTime accountCreationDate;
-    // if (accountCreationDateStr != null) {
-    //   accountCreationDate = DateTime.parse(accountCreationDateStr);
-    // } else {
-    //   accountCreationDate = DateTime.now();
-    //   await prefs.setString(
-    //     'accountCreationDate',
-    //     accountCreationDate.toIso8601String(),
-    //   );
-    // }
 
     setState(() {
       _isGuest = isGuest;
@@ -130,7 +106,7 @@ class _ProfilePageState extends State<ProfilePage> {
         'startDate': null,
       });
 
-      final String? guestChoiceJson = prefs.getString("guestChoice");
+      final String? guestChoiceJson = prefs.getString("choice");
 
       final Map<String, dynamic> loadedTriggerData = jsonDecode(
         guestChoiceJson!,
@@ -139,6 +115,7 @@ class _ProfilePageState extends State<ProfilePage> {
       final String triggers = loadedTriggerData['triggers'];
       final String frequency = loadedTriggerData['frequency'];
       final String motivation = loadedTriggerData['motivation'];
+      final int quantity = loadedTriggerData['quantity'];
 
       await FirebaseFirestore.instance
           .collection('users')
@@ -150,6 +127,7 @@ class _ProfilePageState extends State<ProfilePage> {
             'lastActive': FieldValue.serverTimestamp(),
             'triggers': triggers,
             'frequency': frequency,
+            'quantity': quantity,
             'motivation': motivation,
             'cleanStreak': 0,
             'totalCleanDays': 0,

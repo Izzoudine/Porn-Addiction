@@ -67,6 +67,7 @@ class _LoginPageState extends State<LoginPage> {
             'lastActive': FieldValue.serverTimestamp(),
             'triggers': '',
             'frequency': '',
+            'quantity': '',
             'motivation': '',
             'cleanStreak': 0,
             'totalCleanDays': 0,

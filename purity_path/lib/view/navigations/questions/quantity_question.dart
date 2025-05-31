@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../questionnaire_layout.dart';
 
-class FrequencyQuestion extends StatefulWidget {
+class QuantityQuestion extends StatefulWidget {
   final int? selectedValue;
   final Function(int) onValueChanged;
   final VoidCallback onNext;
   final VoidCallback onPrevious;
   final bool canProceed;
 
-  const FrequencyQuestion({
+  const QuantityQuestion({
     super.key,
     required this.selectedValue,
     required this.onValueChanged,
@@ -19,20 +19,34 @@ class FrequencyQuestion extends StatefulWidget {
   });
 
   @override
-  State<FrequencyQuestion> createState() => _FrequencyQuestionState();
+  State<QuantityQuestion> createState() => _QuantityQuestionState();
 }
 
-class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTickerProviderStateMixin {
+class _QuantityQuestionState extends State<QuantityQuestion> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
-  int _selectedFrequency = 0;
+  int _selectedQuantity = 0;
+  
+  // Available quantity options (in minutes)
+  final List<int> _quantityOptions = [10, 20, 30, 40, 50, 60];
   
   @override
   void initState() {
     super.initState();
     
     if (widget.selectedValue != null) {
-  _selectedFrequency = widget.selectedValue!.clamp(1, 7);
+      // Find the closest valid quantity option
+      int closestIndex = 0;
+      int minDiff = (widget.selectedValue! - _quantityOptions[0]).abs();
+      
+      for (int i = 1; i < _quantityOptions.length; i++) {
+        int diff = (widget.selectedValue! - _quantityOptions[i]).abs();
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestIndex = i;
+        }
+      }
+      _selectedQuantity = _quantityOptions[closestIndex];
     }
     
     _controller = AnimationController(
@@ -54,18 +68,19 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
     super.dispose();
   }
 
- 
-
-  // Calculate the position for the slider thumb based on frequency
-  double _calculateSliderPosition(int frequency, BuildContext context) {
+  // Calculate the position for the slider thumb based on quantity
+  double _calculateSliderPosition(int quantity, BuildContext context) {
     // Calculate available width accounting for padding and thumb width
     final double availableWidth = MediaQuery.of(context).size.width - 80;
     final double leftPadding = 30.0;
     
-    // Calculate position based on frequency (1-7 range)
-    // Divide available width into 7 equal segments
-    final double segmentWidth = availableWidth / 6;
-    final double position = (frequency - 1) * segmentWidth;
+    // Find index of selected quantity
+    final int index = _quantityOptions.indexOf(quantity);
+    if (index == -1) return leftPadding - 25;
+    
+    // Calculate position based on index (6 segments)
+    final double segmentWidth = availableWidth / (_quantityOptions.length - 1);
+    final double position = index * segmentWidth;
     
     // Center the thumb (thumb width is 50) and add left padding
     return position + leftPadding - 25;
@@ -74,10 +89,10 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
   @override
   Widget build(BuildContext context) {
     return QuestionLayout(
-      questionTitle: 'How often do you find yourself struggling with this habit?',
+      questionTitle: 'How much time do you typically spend on this habit?',
       onNext: widget.onNext,
       onPrevious: widget.onPrevious,
-      canProceed: _selectedFrequency > 0,
+      canProceed: _selectedQuantity > 0,
       showPrevious: false,
       child: FadeTransition(
         opacity: _animation,
@@ -103,7 +118,7 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Frequency Gauge
+                  // Quantity Gauge
                   SizedBox(
                     height: 140,
                     width: 140,
@@ -121,12 +136,12 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
                           ),
                         ),
                         // Value semicircle
-                        _selectedFrequency > 0 ? CustomPaint(
+                        _selectedQuantity > 0 ? CustomPaint(
                           size: const Size(140, 140),
                           painter: _GaugePainter(
-                            gaugeValue: _selectedFrequency / 7,
+                            gaugeValue: _getGaugeValue(_selectedQuantity),
                             backgroundColor: Colors.transparent,
-                            valueColor: _getFrequencyColor(_selectedFrequency),
+                            valueColor: _getQuantityColor(_selectedQuantity),
                             isBackground: false,
                           ),
                         ) : Container(),
@@ -135,17 +150,17 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              _selectedFrequency > 0 ? _selectedFrequency.toString() : '0',
+                              _selectedQuantity > 0 ? '${_selectedQuantity}' : '0',
                               style: TextStyle(
                                 fontSize: 36,
                                 fontWeight: FontWeight.bold,
-                                color: _selectedFrequency > 0 
-                                    ? _getFrequencyColor(_selectedFrequency) 
+                                color: _selectedQuantity > 0 
+                                    ? _getQuantityColor(_selectedQuantity) 
                                     : Colors.grey[400],
                               ),
                             ),
                             Text(
-                              'times/week',
+                              'minutes',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey[600],
@@ -154,18 +169,18 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
                           ],
                         ),
                         // Value indicator on arc
-                        if (_selectedFrequency > 0)
+                        if (_selectedQuantity > 0)
                           Positioned(
                             top: 15,
                             child: Transform.rotate(
-                              angle: (math.pi * (_selectedFrequency / 7)) - math.pi / 2,
+                              angle: (math.pi * _getGaugeValue(_selectedQuantity)) - math.pi / 2,
                               child: Transform.translate(
                                 offset: const Offset(0, -50),
                                 child: Container(
                                   width: 22,
                                   height: 22,
                                   decoration: BoxDecoration(
-                                    color: _getFrequencyColor(_selectedFrequency),
+                                    color: _getQuantityColor(_selectedQuantity),
                                     shape: BoxShape.circle,
                                     border: Border.all(color: Colors.white, width: 3),
                                     boxShadow: [
@@ -184,14 +199,14 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
                     ),
                   ),
                   const SizedBox(height: 15),
-                  // Challenge level text
+                  // Duration level text
                   Text(
-                    _selectedFrequency > 0 ? _getChallengeText(_selectedFrequency) : 'Select frequency',
+                    _selectedQuantity > 0 ? _getDurationText(_selectedQuantity) : 'Select duration',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: _selectedFrequency > 0 
-                          ? _getFrequencyColor(_selectedFrequency) 
+                      color: _selectedQuantity > 0 
+                          ? _getQuantityColor(_selectedQuantity) 
                           : Colors.grey[400],
                     ),
                   ),
@@ -216,8 +231,9 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
                         padding: const EdgeInsets.symmetric(horizontal: 25.0),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: List.generate(7, (index) {
-                            final value = index + 1;
+                          children: _quantityOptions.asMap().entries.map((entry) {
+                            final int index = entry.key;
+                            final int value = entry.value;
                             return Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -231,7 +247,7 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  value == 7 ? '7+' : value.toString(),
+                                  index == _quantityOptions.length - 1 ? '${value}+' : value.toString(),
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey[600],
@@ -239,12 +255,12 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
                                 ),
                               ],
                             );
-                          }),
+                          }).toList(),
                         ),
                       ),
                     ),
                     // Colored track showing selected range
-                    if (_selectedFrequency > 0)
+                    if (_selectedQuantity > 0)
                       Positioned(
                         left: 30,
                         right: 30,
@@ -254,10 +270,10 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
                           child: Row(
                             children: [
                               Flexible(
-                                flex: _selectedFrequency,
+                                flex: _quantityOptions.indexOf(_selectedQuantity) + 1,
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: _getFrequencyColor(_selectedFrequency),
+                                    color: _getQuantityColor(_selectedQuantity),
                                     borderRadius: const BorderRadius.only(
                                       topLeft: Radius.circular(2),
                                       bottomLeft: Radius.circular(2),
@@ -266,7 +282,7 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
                                 ),
                               ),
                               Flexible(
-                                flex: 7 - _selectedFrequency,
+                                flex: _quantityOptions.length - (_quantityOptions.indexOf(_selectedQuantity) + 1),
                                 child: Container(
                                   decoration: BoxDecoration(
                                     color: Colors.grey[300],
@@ -282,11 +298,11 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
                         ),
                       ),
                     // Slider thumb
-                    if (_selectedFrequency > 0)
+                    if (_selectedQuantity > 0)
                       AnimatedPositioned(
                         duration: const Duration(milliseconds: 150),
                         curve: Curves.easeOutCubic,
-                        left: _calculateSliderPosition(_selectedFrequency, context),
+                        left: _calculateSliderPosition(_selectedQuantity, context),
                         top: 15,
                         child: GestureDetector(
                           onHorizontalDragUpdate: (details) {
@@ -300,26 +316,27 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
                             // Calculate position within available width
                             final double position = (localPosition.dx - leftPadding).clamp(0.0, availableWidth);
                             
-                            // Calculate frequency (1-7) based on position
-                            final int frequency = (position / availableWidth * 7).ceil();
-                            final int clampedFrequency = frequency.clamp(1, 7);
+                            // Calculate index based on position
+                            final int index = (position / availableWidth * (_quantityOptions.length - 1)).round();
+                            final int clampedIndex = index.clamp(0, _quantityOptions.length - 1);
+                            final int selectedQuantity = _quantityOptions[clampedIndex];
                             
-                            if (_selectedFrequency != clampedFrequency) {
+                            if (_selectedQuantity != selectedQuantity) {
                               setState(() {
-                                _selectedFrequency = clampedFrequency;
+                                _selectedQuantity = selectedQuantity;
                               });
-                              widget.onValueChanged(clampedFrequency);
+                              widget.onValueChanged(selectedQuantity);
                             }
                           },
                           child: Container(
                             width: 50,
                             height: 50,
                             decoration: BoxDecoration(
-                              color: _getFrequencyColor(_selectedFrequency),
+                              color: _getQuantityColor(_selectedQuantity),
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: _getFrequencyColor(_selectedFrequency).withOpacity(0.3),
+                                  color: _getQuantityColor(_selectedQuantity).withOpacity(0.3),
                                   blurRadius: 10,
                                   offset: const Offset(0, 3),
                                 ),
@@ -327,11 +344,11 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
                             ),
                             child: Center(
                               child: Text(
-                                _selectedFrequency >= 7 ? '7+' : _selectedFrequency.toString(),
+                                _selectedQuantity >= 60 ? '60+' : _selectedQuantity.toString(),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 18,
+                                  fontSize: 14,
                                 ),
                               ),
                             ),
@@ -352,14 +369,15 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
                           // Calculate position within available width
                           final double position = (localPosition.dx - leftPadding).clamp(0.0, availableWidth);
                           
-                          // Calculate frequency (1-7) based on position
-                          final int frequency = (position / availableWidth * 7).ceil();
-                          final int clampedFrequency = frequency.clamp(1, 7);
+                          // Calculate index based on position
+                          final int index = (position / availableWidth * (_quantityOptions.length - 1)).round();
+                          final int clampedIndex = index.clamp(0, _quantityOptions.length - 1);
+                          final int selectedQuantity = _quantityOptions[clampedIndex];
                           
                           setState(() {
-                            _selectedFrequency = clampedFrequency;
+                            _selectedQuantity = selectedQuantity;
                           });
-                          widget.onValueChanged(clampedFrequency);
+                          widget.onValueChanged(selectedQuantity);
                         },
                         behavior: HitTestBehavior.opaque,
                         child: Container(
@@ -378,23 +396,30 @@ class _FrequencyQuestionState extends State<FrequencyQuestion> with SingleTicker
     );
   }
   
-  Color _getFrequencyColor(int frequency) {
-    if (frequency >= 1 && frequency <= 3) {
-      return const Color(0xFF66BB6A); // Green for Challenging
-    } else if (frequency >= 4 && frequency <= 6) {
-      return const Color(0xFFFFA726); // Orange for Very Challenging
+  // Get gauge value (0.0 to 1.0) based on selected quantity
+  double _getGaugeValue(int quantity) {
+    final int index = _quantityOptions.indexOf(quantity);
+    if (index == -1) return 0.0;
+    return index / (_quantityOptions.length - 1);
+  }
+  
+  Color _getQuantityColor(int quantity) {
+    if (quantity >= 10 && quantity <= 20) {
+      return const Color(0xFF66BB6A); // Green for Short Duration
+    } else if (quantity >= 30 && quantity <= 40) {
+      return const Color(0xFFFFA726); // Orange for Moderate Duration
     } else {
-      return const Color(0xFFEF5350); // Red for Extremely Challenging
+      return const Color(0xFFEF5350); // Red for Long Duration
     }
   }
   
-  String _getChallengeText(int frequency) {
-    if (frequency >= 1 && frequency <= 3) {
-      return 'Challenging';
-    } else if (frequency >= 4 && frequency <= 6) {
-      return 'Very Challenging';
+  String _getDurationText(int quantity) {
+    if (quantity >= 10 && quantity <= 20) {
+      return 'Short Duration';
+    } else if (quantity >= 30 && quantity <= 40) {
+      return 'Moderate Duration';
     } else {
-      return 'Extremely Challenging';
+      return 'Long Duration';
     }
   }
 }
@@ -452,8 +477,8 @@ class _GaugePainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2.0;
       
-      for (int i = 0; i <= 7; i++) {
-        final angle = math.pi + (math.pi * i / 7);
+      for (int i = 0; i < 6; i++) {
+        final angle = math.pi + (math.pi * i / 5);
         final outerPoint = Offset(
           center.dx + (radius - 15) * math.cos(angle),
           center.dy + (radius - 15) * math.sin(angle),

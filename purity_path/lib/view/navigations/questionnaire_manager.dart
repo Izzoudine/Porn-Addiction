@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:purity_path/utils/consts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'questions/frequency_question.dart';
+import 'questions/quantity_question.dart';
 import 'questions/triggers_question.dart';
 import 'questions/motivation_question.dart';
 import 'goals_informations.dart';
@@ -20,10 +21,11 @@ class QuestionnaireManager extends StatefulWidget {
 class _QuestionnaireManagerState extends State<QuestionnaireManager> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  final int _totalPages = 3; // Reduced to 3 questions total
+  final int _totalPages = 4; // Reduced to 3 questions total
 
   // Store user responses
-  String? frequencyResponse;
+  int? frequencyResponse;
+  int? quantityResponse;
   String? triggerResponse;
   String otherTrigger = '';
   String? motivationResponse;
@@ -50,15 +52,24 @@ class _QuestionnaireManagerState extends State<QuestionnaireManager> {
           'triggers':
               triggerResponse == 'Other' ? otherTrigger : triggerResponse,
           'frequency': frequencyResponse,
+          'quantity': quantityResponse,
           'motivation': motivationResponse,
         };
-        await prefs.setString("guestChoice", jsonEncode(triggerData));
+        await prefs.setString("choice", jsonEncode(triggerData));
 
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => GoalsInformation()),
         );
       } else {
-      final user = FirebaseAuth.instance.currentUser;
+        final Map<String, dynamic> triggerData = {
+          'triggers':
+              triggerResponse == 'Other' ? otherTrigger : triggerResponse,
+          'frequency': frequencyResponse,
+          'quantity': quantityResponse,
+          'motivation': motivationResponse,
+        };
+        await prefs.setString("guestChoice", jsonEncode(triggerData));
+        final user = FirebaseAuth.instance.currentUser;
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user!.uid)
@@ -67,6 +78,7 @@ class _QuestionnaireManagerState extends State<QuestionnaireManager> {
               'triggers':
                   triggerResponse == 'Other' ? otherTrigger : triggerResponse,
               'frequency': frequencyResponse,
+              'quantity': quantityResponse,
               'motivation': motivationResponse,
             });
         Navigator.of(context).pushReplacement(
@@ -131,6 +143,17 @@ class _QuestionnaireManagerState extends State<QuestionnaireManager> {
                     onNext: goToNextPage,
                     onPrevious: goToPreviousPage,
                     canProceed: frequencyResponse != null,
+                  ),
+                  QuantityQuestion(
+                    selectedValue: quantityResponse,
+                    onValueChanged: (value) {
+                      setState(() {
+                        quantityResponse = value;
+                      });
+                    },
+                    onNext: goToNextPage,
+                    onPrevious: goToPreviousPage,
+                    canProceed: quantityResponse != null,
                   ),
                   TriggersQuestion(
                     selectedValue: triggerResponse,
