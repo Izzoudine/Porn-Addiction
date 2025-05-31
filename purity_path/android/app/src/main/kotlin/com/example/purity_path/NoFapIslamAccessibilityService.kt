@@ -29,12 +29,15 @@ class NoFapIslamAccessibilityService : AccessibilityService() {
     }
     
     // Enhanced keyword detection with regex patterns
-    private val adultPatterns = listOf(
-        Pattern.compile("\\b(porn|adult|sex|xxx|nude|nsfw)\\b", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("\\b(fuck|ass|boobs|pussy|dick|penis|vagina)\\b", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("\\b(milf|teen|mature|anal|oral)\\b", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("\\b(webcam|cam girl|escort|hookup)\\b", Pattern.CASE_INSENSITIVE)
-    )
+private val adultPatterns = listOf(
+  Pattern.compile("\\b(porn|adult|sex|xxx|nude|nsfw)\\b", Pattern.CASE_INSENSITIVE),
+  Pattern.compile("\\b(fuck|ass|boobs|pussy|dick|penis|vagina)\\b", Pattern.CASE_INSENSITIVE),
+  Pattern.compile("\\b(milf|teen|mature|anal|oral)\\b", Pattern.CASE_INSENSITIVE),
+  Pattern.compile("\\b(webcam|cam girl|escort|hookup)\\b", Pattern.CASE_INSENSITIVE),
+  Pattern.compile("\\b(18\\+|over18|adultchat|nsfwchat)\\b", Pattern.CASE_INSENSITIVE),
+  Pattern.compile("\\b(r/NSFW|r/adult|r/porn|r/sex)\\b", Pattern.CASE_INSENSITIVE),
+  Pattern.compile("\\b(pornhub.com|xvideos.com|redtube.com|youporn.com|xnxx.com|chaturbate.com)\\b", Pattern.CASE_INSENSITIVE)
+)
     
     // Whitelist for legitimate apps that might contain these words
     private val whitelistedPackages = setOf(
@@ -44,11 +47,18 @@ class NoFapIslamAccessibilityService : AccessibilityService() {
     )
     
     // Blocked app packages
-    private val blockedPackages = setOf(
-        "com.reddit.frontpage",
-        "com.twitter.android",
-        // Add specific adult apps here
-    )
+  private val blockedPackages = setOf(
+    "org.telegram.messenger", // Telegram
+    "com.reddit.frontpage", // Reddit
+    "com.twitter.android", // Twitter/X
+    "org.thunderdog.challegram",
+    "com.discord", // Discord
+    "com.tumblr", // Tumblr
+    "com.snapchat.android", // Snapchat
+  "org.telegram.x",
+    "com.pornhub",
+    "com.xvideos"
+)
     
     private var overlayView: View? = null
     private var isOverlayShown = false
@@ -107,9 +117,17 @@ class NoFapIslamAccessibilityService : AccessibilityService() {
             }
             
             // Check URL if it's a web view
-            if (node.className == "android.webkit.WebView") {
-                // Additional URL checking logic could go here
-            }
+          if (node.className == "android.webkit.WebView") {
+  val url = node.text?.toString() ?: node.contentDescription?.toString()
+  if (url != null && containsAdultContent(url)) {
+    withContext(Dispatchers.Main) {
+      Log.d(TAG, "Adult URL detected: $url")
+      showBlockingOverlay("Inappropriate Website Detected", url)
+      performGlobalAction(GLOBAL_ACTION_BACK) // Navigate back
+    }
+    return
+  }
+}
             
             // Recursively check children with depth limit
             for (i in 0 until node.childCount) {
@@ -215,15 +233,17 @@ class NoFapIslamAccessibilityService : AccessibilityService() {
             }
         }
         
-      val reportButton = Button(this).apply {
-       text = "Report False Positive"
-       setOnClickListener {
+val reportButton = Button(this).apply {
+    text = "Report False Positive"
+    setBackgroundColor(Color.parseColor("#FF4444"))
+    setTextColor(Color.WHITE)
+    setPadding(30, 15, 30, 15)
+    setOnClickListener {
+        Log.d(TAG, "False positive reported: $detectedContent")
+        // Optionally send to server or local storage
         removeOverlay()
-        // Actually go back or close the app
         performGlobalAction(GLOBAL_ACTION_BACK)
-        // Or force close current app
-        forceCloseCurrentApp()
-      } 
+    }
 }
         
         buttonLayout.addView(closeButton)
