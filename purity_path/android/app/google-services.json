@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "221524605439",
+    "firebase_url": "https://nofap-islam-default-rtdb.firebaseio.com",
+    "project_id": "nofap-islam",
+    "storage_bucket": "nofap-islam.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:221524605439:android:e45d12664eb77b39c9cfca",
+        "android_client_info": {
+          "package_name": "com.example.purity_path"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "221524605439-jbohmddocl7p7jdrg1qutgg8qfvk3qps.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.purity_path",
+            "certificate_hash": "6d8c3fb3728d4cc5eb90632580185c914a1380ec"
+          }
+        },
+        {
+          "client_id": "221524605439-vdcd2r8foihbfukpik74afekak6t51p3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDy_lLgTl1d17bxX07DfQFPYez0PygcDZQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "221524605439-vdcd2r8foihbfukpik74afekak6t51p3.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "221524605439-gki0905fvpfrho64pfj5n345u6d6390v.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.purityPath"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

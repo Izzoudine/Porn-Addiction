@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:purity_path/data/services/permissions_service.dart';
 import 'package:purity_path/utils/consts.dart';
 import 'package:purity_path/utils/routes/routes_name.dart';
 import '../../data/models/permission_model.dart';
@@ -12,45 +13,57 @@ class PermissionsScreen extends StatefulWidget {
 }
 
 class _PermissionsScreenState extends State<PermissionsScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  String _errorMessage = '';
+  bool _isLoading = false;
+ 
 
   final List<PermissionItem> _permissions = [
     PermissionItem(
-      permission: Permission.notification,
-      title: 'Notification Access',
-      description: 'Monitor and control notifications from other apps',
+      title: 'Notifications',
+      description: 'Allows N Islam to send alerts and reminders.',
       icon: Icons.notifications_active,
       color: const Color(AppColors.primary),
+      isNotifications: true,
+      status: PermissionStatus.denied, // Initialize status
     ),
     PermissionItem(
-      permission: Permission.notification,
-      title: 'Post Notifications',
-      description: 'Allow us to send you important alerts',
-      icon: Icons.message,
-      color: const Color(0xFF10B981),
-    ),
-    PermissionItem(
-      // We'll handle this permission specially
       title: 'Accessibility Service',
-      description: 'Required to monitor and block inappropriate apps',
+      description: 'Required to monitor and block inappropriate apps.',
       icon: Icons.accessibility_new,
       color: const Color(0xFFEF4444),
       isAccessibility: true,
+      status: PermissionStatus.denied, // Initialize status
+    ),
+
+    PermissionItem(
+      title: 'Device Administrator',
+      description:
+          'Prevents unauthorized app removal and ensures continuous protection.',
+      icon: Icons.admin_panel_settings,
+      color: const Color(0xFFDC2626),
+      isAdmin: true,
+      status: PermissionStatus.denied, // Initialize status
     ),
     PermissionItem(
-      permission: Permission.ignoreBatteryOptimizations,
-      title: 'Battery Optimization',
-      description: 'Allow app to run in background for continuous protection',
-      icon: Icons.battery_charging_full,
-      color: const Color(0xFFF59E0B),
+      title: 'Overlay',
+      description:
+          'Prevents unauthorized app removal and ensures continuous protection.',
+      icon: Icons.layers,
+      color: const Color(0xFFDC2626),
+      isOverlay: true, // Renamed from isAdmin
+      status: PermissionStatus.denied,
     ),
+ 
   ];
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -59,43 +72,155 @@ class _PermissionsScreenState extends State<PermissionsScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     _animationController.forward();
-    _checkPermissions();
+    _checkPermissions(); // Initial permission check
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _animationController.dispose();
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshPermissions(); // Check all permissions on resume
+    }
+  }
+
+  Future<void> _refreshPermissions() async {
+    await _checkPermissions();
+    final accessibilityItem = _permissions.firstWhere(
+      (item) => item.isAccessibility,
+    );
+    if (accessibilityItem.status?.isGranted == true) {}
+    await Future.delayed(const Duration(seconds: 1));
+  }
+
   Future<void> _checkPermissions() async {
-    for (var item in _permissions) {
-      if (item.permission != null) {
-        final status = await item.permission!.status;
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = '';
+      });
+    }
+
+    try {
+      for (var item in _permissions) {
+        if (item.isAccessibility) {
+          final isEnabled =
+              await PermissionService.isAccessibilityServiceEnabled();
+          if (mounted) {
+            setState(() {
+              item.status =
+                  isEnabled
+                      ? PermissionStatus.granted
+                      : PermissionStatus.denied;
+            });
+          }
+        } else if (item.isAdmin) {
+          final isEnabled =
+              await PermissionService.isDeviceAdminPermissionGranted();
+          if (mounted) {
+            setState(() {
+              item.status =
+                  isEnabled
+                      ? PermissionStatus.granted
+                      : PermissionStatus.denied;
+            });
+          }
+        } 
+      else if (item.isNotifications) {
+          final isSending =
+              await PermissionService.isNotificationPermissionGranted();
+          if (mounted) {
+            setState(() {
+              item.status =
+                  isSending
+                      ? PermissionStatus.granted
+                      : PermissionStatus.denied;
+            });
+          }
+        }
+        else if (item.isOverlay) {
+          final isSending =
+              await PermissionService.isOverlayPermissionGranted();
+          if (mounted) {
+            setState(() {
+              item.status =
+                  isSending
+                      ? PermissionStatus.granted
+                      : PermissionStatus.denied;
+            });
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         setState(() {
-          item.status = status;
+          _errorMessage = 'Error checking permissions: $e';
+        });
+      }
+      print('Permission check error: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
         });
       }
     }
   }
 
   Future<void> _requestPermission(PermissionItem item) async {
-    if (item.isAccessibility) {
-      // Navigate to the accessibility info page
-      Navigator.pushNamed(context, RoutesName.accessibility);
-      return;
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = '';
+      });
     }
 
-    if (item.permission != null) {
-      final status = await item.permission!.request();
-      setState(() {
-        item.status = status;
-      });
+    try {
+      if (item.isAccessibility) {
+
+        await Navigator.pushNamed(context, RoutesName.accessibility);
+        await Future.delayed(const Duration(seconds: 2));
+        await _checkPermissions();
+      }  else if (item.isNotifications) {
+        await PermissionService.requestNotificationPermission();
+        await Future.delayed(const Duration(seconds: 2));
+        await _checkPermissions();
+      } else if (item.isOverlay) {
+        await PermissionService.requestOverlayPermission();
+        await Future.delayed(const Duration(seconds: 2));
+        await _checkPermissions();
+      }else if (item.isAdmin) {
+        await Navigator.pushNamed(context, RoutesName.admin);
+        await Future.delayed(const Duration(seconds: 2));
+        await _checkPermissions();
+      }
+ 
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error requesting permission: $e';
+        });
+      }
+      print('Permission request error: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      await _checkPermissions(); // Ensure UI reflects latest statuses
     }
   }
 
   int get _grantedPermissionsCount {
-    return _permissions.where((item) => item.status?.isGranted ?? false).length;
+    final count =
+        _permissions.where((item) => item.status?.isGranted ?? false).length;
+    return count;
   }
 
   @override
@@ -105,9 +230,9 @@ class _PermissionsScreenState extends State<PermissionsScreen>
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          'Permissions',
-          style: TextStyle(
+        title: Text(
+          "Permissions",
+          style: const TextStyle(
             color: Color(0xFF1F2937),
             fontWeight: FontWeight.bold,
           ),
@@ -119,63 +244,78 @@ class _PermissionsScreenState extends State<PermissionsScreen>
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,
-        child: _buildPermissionsContent(),
+        child: Column(
+          children: [
+            if (_errorMessage.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  _errorMessage,
+                  style: const TextStyle(color: Colors.red, fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: CircularProgressIndicator(),
+              ),
+            Expanded(child: _buildPermissionsContent()),
+          ],
+        ),
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16.0),
         child: ElevatedButton(
-          onPressed: () {
-             Navigator.pushNamedAndRemoveUntil(
-                                  context,
-                                  RoutesName.navigation,(Route<dynamic> route) => false
-                                );
-       /*     final allGranted = _permissions.every(
-              (item) => item.status?.isGranted ?? false || item.isAccessibility,
-            );
-
-            if (allGranted) {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Permissions setup complete!'),
-                  backgroundColor: Color(0xFF10B981),
-                ),
-              );
-            } else {
-              showDialog(
-                context: context,
-                builder:
-                    (context) => AlertDialog(
-                      title: const Text('Permissions Required'),
-                      content: const Text(
-                        'Some permissions are still required for the app to function properly. Would you like to grant them now?',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Later'),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            
-                       /*     for (var item in _permissions) {
-                              if (!(item.status?.isGranted ?? false) &&
-                                  item.permission != null) {
-                                _requestPermission(item);
-                              }
-                               
-                              
-                            }
-                         
-                         */ },
-                          child: const Text('Grant Now'),
-                        ),
-                      ],
-                    ),
-              );
-            }
-            */
-          },
+          onPressed:
+              _isLoading
+                  ? null
+                  : () {
+                    final allGranted = _permissions.every(
+                      (item) => item.status?.isGranted ?? false,
+                    );
+                    if (allGranted) {
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        RoutesName.navigation,
+                        (Route<dynamic> route) => false,
+                      );
+                      // ScaffoldMessenger.of(context).showSnackBar(
+                      //   const SnackBar(
+                      //     content: Text('Permissions setup complete!'),
+                      //     backgroundColor: Color(0xFF10B981),
+                      //   ),
+                      // );
+                    } else {
+                      showDialog(
+                        context: context,
+                        builder:
+                            (context) => AlertDialog(
+                              title: const Text('Permissions Required'),
+                              content: const Text(
+                                'Some permissions are still required for the app to function properly. Please grant them now.',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed:
+                                      () => Navigator.pushNamedAndRemoveUntil(
+                                        context,
+                                        RoutesName.navigation,
+                                        (Route<dynamic> route) => false,
+                                      ),
+                                  child: const Text('Later'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text('Grant Now'),
+                                ),
+                              ],
+                            ),
+                      );
+                    }
+                  },
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(AppColors.primary),
             foregroundColor: Colors.white,
@@ -309,77 +449,76 @@ class _PermissionsScreenState extends State<PermissionsScreen>
               final item = _permissions[index];
               final isGranted = item.status?.isGranted ?? false;
 
-              return Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                  border: Border.all(
-                    color:
-                        isGranted
-                            ? const Color(0xFFD1FAE5)
-                            : Colors.grey.withOpacity(0.2),
-                    width: isGranted ? 2 : 1,
-                  ),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
-                  child: InkWell(
-                    onTap: () => _requestPermission(item),
+              return GestureDetector(
+                onTap: () => _requestPermission(item),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color: item.color.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                    border: Border.all(
+                      color:
+                          isGranted
+                              ? const Color(0xFFD1FAE5)
+                              : Colors.grey.withOpacity(0.2),
+                      width: isGranted ? 2 : 1,
+                    ),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                    child: InkWell(
+                      onTap: () => _requestPermission(item),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: item.color.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                item.icon,
+                                color: item.color,
+                                size: 28,
+                              ),
                             ),
-                            child: Icon(item.icon, color: item.color, size: 28),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.title,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF1F2937),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.title,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF1F2937),
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  item.description,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    item.description,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[600],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          if (item.isAccessibility)
-                            const Icon(
-                              Icons.arrow_forward_ios,
-                              color: Color(AppColors.secondary),
-                              size: 16,
-                            )
-                          else
+                            const SizedBox(width: 8),
                             Container(
                               width: 24,
                               height: 24,
@@ -400,7 +539,8 @@ class _PermissionsScreenState extends State<PermissionsScreen>
                                 ),
                               ),
                             ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),

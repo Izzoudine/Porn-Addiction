@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 class History extends StatefulWidget {
-  const History({Key? key}) : super(key: key);
+  const History({super.key});
 
   @override
   State<History> createState() => _HistoryScreenState();

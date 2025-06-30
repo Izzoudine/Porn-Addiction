@@ -1,28 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:purity_path/data/services/permissions_service.dart';
 
-class AccessibilityInfoPage extends StatefulWidget {
-  const AccessibilityInfoPage({super.key});
+class AdminInfoPage extends StatefulWidget {
+  const AdminInfoPage({super.key});
 
   @override
-  _AccessibilityInfoPageState createState() => _AccessibilityInfoPageState();
+  _AdminInfoPageState createState() => _AdminInfoPageState();
 }
 
-class _AccessibilityInfoPageState extends State<AccessibilityInfoPage> {
-  bool _isAccessibilityEnabled = false;
+class _AdminInfoPageState extends State<AdminInfoPage> {
+  bool _isAdminEnabled = false;
   String _errorMessage = '';
   bool _isLoading = false;
 
-  Future<void> _checkAccessibilityStatus() async {
+  Future<void> _checkAdminStatus() async {
     setState(() {
       _isLoading = true;
     });
     try {
-      print("Beforer requestAcessibility");
-
-      final isEnabled = await PermissionService.isAccessibilityServiceEnabled();
+      final isEnabled = await PermissionService.isDeviceAdminPermissionGranted();
       setState(() {
-        _isAccessibilityEnabled = isEnabled;
+        _isAdminEnabled = isEnabled;
         _errorMessage = '';
       });
       if (isEnabled) {
@@ -30,7 +28,7 @@ class _AccessibilityInfoPageState extends State<AccessibilityInfoPage> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error checking accessibility: $e';
+        _errorMessage = 'Error checking admin status: $e';
       });
     } finally {
       setState(() {
@@ -39,25 +37,18 @@ class _AccessibilityInfoPageState extends State<AccessibilityInfoPage> {
     }
   }
 
-  Future<void> _requestAccessibilityPermission() async {
-    print("Entered requestAccess");
+  Future<void> _requestAdminPermission() async {
     setState(() {
       _isLoading = true;
       _errorMessage = '';
     });
     try {
-      print("Before requestAcessibility");
-
-
-      await PermissionService.requestAccessibilityPermission();
-
-
-
+      await PermissionService.requestDeviceAdminPermission("PurityPath needs device admin access to prevent unauthorized uninstallation and ensure continuous protection for your family.");
       await Future.delayed(const Duration(seconds: 1));
-      await _checkAccessibilityStatus();
+      await _checkAdminStatus();
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error requesting accessibility: $e';
+        _errorMessage = 'Error requesting admin permission: $e';
       });
     } finally {
       setState(() {
@@ -69,7 +60,7 @@ class _AccessibilityInfoPageState extends State<AccessibilityInfoPage> {
   @override
   void initState() {
     super.initState();
-    _checkAccessibilityStatus();
+    _checkAdminStatus();
   }
 
   @override
@@ -80,7 +71,7 @@ class _AccessibilityInfoPageState extends State<AccessibilityInfoPage> {
         backgroundColor: Colors.white,
         elevation: 0,
         title: const Text(
-          'Accessibility Permission',
+          'Device Admin Permission',
           style: TextStyle(
             color: Color(0xFF1F2937),
             fontWeight: FontWeight.bold,
@@ -125,7 +116,7 @@ class _AccessibilityInfoPageState extends State<AccessibilityInfoPage> {
                     borderRadius: BorderRadius.circular(60),
                   ),
                   child: const Icon(
-                    Icons.accessibility_new,
+                    Icons.admin_panel_settings,
                     size: 60,
                     color: Color(0xFF3B82F6),
                   ),
@@ -135,7 +126,7 @@ class _AccessibilityInfoPageState extends State<AccessibilityInfoPage> {
               // Title
               const Center(
                 child: Text(
-                  'Why We Need Accessibility Permission',
+                  'Why We Need Device Admin Permission',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -154,7 +145,7 @@ class _AccessibilityInfoPageState extends State<AccessibilityInfoPage> {
                   border: Border.all(color: const Color(0xFFBFDBFE)),
                 ),
                 child: const Text(
-                  'Our app needs accessibility permission to monitor and block inappropriate applications and content. This is a critical permission that allows us to protect you from harmful content.',
+                  'Our app needs device administrator permission to provide comprehensive protection and prevent unauthorized access or uninstallation of the app.',
                   style: TextStyle(fontSize: 16, color: Color(0xFF1F2937)),
                 ),
               ),
@@ -170,22 +161,28 @@ class _AccessibilityInfoPageState extends State<AccessibilityInfoPage> {
               ),
               const SizedBox(height: 16),
               _buildInfoItem(
-                icon: Icons.block,
-                title: 'Block Inappropriate Apps',
+                icon: Icons.lock,
+                title: 'Prevent App Uninstallation',
                 description:
-                    'We detect and block access to adult applications and content.',
+                    'Protect against unauthorized removal of the parental control app.',
               ),
               _buildInfoItem(
-                icon: Icons.timer,
-                title: 'Monitor Screen Time',
+                icon: Icons.security,
+                title: 'Secure System Settings',
                 description:
-                    'We track app usage to enforce time limits and schedules.',
+                    'Prevent changes to critical device settings that could bypass protections.',
               ),
               _buildInfoItem(
-                icon: Icons.shield,
-                title: 'Protect Against Harmful Content',
+                icon: Icons.power_settings_new,
+                title: 'Lock Screen Control',
                 description:
-                    'We prevent access to websites with inappropriate content.',
+                    'Manage device lock screen and password policies for enhanced security.',
+              ),
+              _buildInfoItem(
+                icon: Icons.app_blocking,
+                title: 'App Installation Control',
+                description:
+                    'Block installation of unauthorized apps from unknown sources.',
               ),
               const SizedBox(height: 24),
               // Privacy commitment
@@ -204,10 +201,10 @@ class _AccessibilityInfoPageState extends State<AccessibilityInfoPage> {
                   children: [
                     const Row(
                       children: [
-                        Icon(Icons.security, color: Colors.white),
+                        Icon(Icons.verified_user, color: Colors.white),
                         SizedBox(width: 8),
                         Text(
-                          'Our Privacy Commitment',
+                          'Our Security Promise',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -218,11 +215,50 @@ class _AccessibilityInfoPageState extends State<AccessibilityInfoPage> {
                     ),
                     const SizedBox(height: 12),
                     const Text(
-                      '• We do NOT collect or store your personal data\n'
-                      '• We do NOT track your location\n'
-                      '• We do NOT share any information with third parties\n'
-                      '• All content filtering happens directly on your device',
+                      '• Admin permissions are used ONLY for protection purposes\n'
+                      '• We do NOT access your personal files or data\n'
+                      '• We do NOT modify system settings beyond safety controls\n'
+                      '• All administrative actions are transparent and reversible',
                       style: TextStyle(fontSize: 14, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Warning section
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFD97706)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning, color: Color(0xFFD97706)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Important Note',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF92400E),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Without admin permission, advanced protections may be easily bypassed. This permission ensures maximum security.',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.amber[800],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -231,9 +267,9 @@ class _AccessibilityInfoPageState extends State<AccessibilityInfoPage> {
               // Enable button
               ElevatedButton(
                 onPressed:
-                    _isLoading || _isAccessibilityEnabled
+                    _isLoading || _isAdminEnabled
                         ? null
-                        : _requestAccessibilityPermission,
+                        : _requestAdminPermission,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF3B82F6),
                   foregroundColor: Colors.white,
@@ -243,9 +279,9 @@ class _AccessibilityInfoPageState extends State<AccessibilityInfoPage> {
                   ),
                 ),
                 child: Text(
-                  _isAccessibilityEnabled
-                      ? 'Accessibility Service Enabled'
-                      : 'Enable Accessibility Service',
+                  _isAdminEnabled
+                      ? 'Device Admin Enabled'
+                      : 'Enable Device Administrator',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -259,7 +295,7 @@ class _AccessibilityInfoPageState extends State<AccessibilityInfoPage> {
                     _isLoading ? null : () => Navigator.pop(context, false),
                 child: const Center(
                   child: Text(
-                    'Skip for now (Limited Protection)',
+                    'Skip for now (Reduced Security)',
                     style: TextStyle(color: Color(0xFF6B7280)),
                   ),
                 ),

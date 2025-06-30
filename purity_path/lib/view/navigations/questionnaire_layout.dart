@@ -11,7 +11,7 @@ class QuestionLayout extends StatelessWidget {
   final String nextButtonText;
 
   const QuestionLayout({
-    Key? key,
+    super.key,
     required this.questionTitle,
     required this.child,
     required this.onNext,
@@ -19,7 +19,7 @@ class QuestionLayout extends StatelessWidget {
     required this.canProceed,
     this.showPrevious = true,
     this.nextButtonText = 'Next',
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

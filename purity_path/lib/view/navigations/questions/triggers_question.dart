@@ -10,7 +10,7 @@ class TriggersQuestion extends StatelessWidget {
   final bool canProceed;
 
   const TriggersQuestion({
-    Key? key,
+    super.key,
     required this.selectedValue,
     required this.otherValue,
     required this.onValueChanged, 
@@ -18,7 +18,7 @@ class TriggersQuestion extends StatelessWidget {
     required this.onNext,
     required this.onPrevious,
     required this.canProceed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -113,11 +113,11 @@ class TextField extends StatelessWidget {
   final InputDecoration decoration;
 
   const TextField({
-    Key? key,
+    super.key,
     required this.value,
     required this.onChanged,
     required this.decoration,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

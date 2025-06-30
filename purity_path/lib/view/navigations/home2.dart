@@ -3,11 +3,13 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:purity_path/data/services/permissions_service.dart';
+import 'package:purity_path/utils/routes/routes_name.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'acceptance.dart';
 
 class Home extends StatefulWidget {
-  const Home({Key? key}) : super(key: key);
+  const Home({super.key});
 
   @override
   State<Home> createState() => _HomeState();
@@ -19,12 +21,14 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   int cleanMinutes = 0;
   int cleanSeconds = 0;
   int contentIndex = 0;
-  PageController _pageController = PageController(initialPage: 0);
+  final PageController _pageController = PageController(initialPage: 0);
   String today = '';
   Timer? _autoScrollTimer;
   Timer? _countUpdateTimer;
   DateTime? _lastRelapseDate;
   bool _hasStartedJourney = false;
+  final bool _allPermissionsGranted = false;
+  Future<bool>? _permissionFuture;
 
   List<Map<String, String>> dailyContent = [
     {
@@ -48,6 +52,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _permissionFuture = checkPermission();
     _loadData();
     today = DateFormat('yyyy-MM-dd').format(DateTime.now());
     _checkAndUpdateDailyContent();
@@ -77,19 +82,43 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   }
 
 
-void _startCleanTimeCounter() {
-  // Annuler le timer existant s'il y en a un
-  _countUpdateTimer?.cancel();
-  
-  // Créer un nouveau timer qui s'exécute chaque seconde
-  _countUpdateTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-    if (_lastRelapseDate != null && mounted) {
-      setState(() {
-        _updateCleanTimeCounter();
-      });
+  Future<bool> checkPermission() async {
+    try {
+      final permitAccess =
+          await PermissionService.isAccessibilityServiceEnabled();
+      final permitNotifications =
+          await PermissionService.isNotificationPermissionGranted();
+      final permitAdmin =
+          await PermissionService.isDeviceAdminPermissionGranted();
+      final permitOverlay =
+          await PermissionService.isOverlayPermissionGranted();    
+      return permitAccess && permitNotifications && permitAdmin && permitOverlay;
+    } catch (e) {
+      print('Error checking permissions: $e');
+      return false;
     }
-  });
-}
+  }
+
+  void _navigateToPermissions() async {
+    final result = await Navigator.pushNamed(context, RoutesName.permissions);
+    setState(() {}); // Refresh UI to recheck permissions
+    if (result == true) {}
+  }
+
+  void _startCleanTimeCounter() {
+    // Annuler le timer existant s'il y en a un
+    _countUpdateTimer?.cancel();
+
+    // Créer un nouveau timer qui s'exécute chaque seconde
+    _countUpdateTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_lastRelapseDate != null && mounted) {
+        setState(() {
+          _updateCleanTimeCounter();
+        });
+      }
+    });
+  }
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -207,11 +236,9 @@ void _startCleanTimeCounter() {
   void _navigateToAcceptancePage() async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const AcceptancePage(),
-      ),
+      MaterialPageRoute(builder: (context) => const AcceptancePage()),
     );
-    
+
     // Check if journey was started from the acceptance page
     if (result == true) {
       setState(() {
@@ -226,6 +253,87 @@ void _startCleanTimeCounter() {
     }
   }
 
+  Widget _buildPermissionNotification(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.orange.shade100, Colors.red.shade100],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.orange.shade300, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade200,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.warning_rounded,
+                  color: Colors.orange.shade800,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Permissions Required',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade800,
+                      ),
+                    ),
+                    Text(
+                      'Some permissions are missing for full protection.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.orange.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: _navigateToPermissions,
+            icon: const Icon(Icons.settings, size: 20),
+            label: const Text('Grant Permissions'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange.shade600,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              minimumSize: const Size(double.infinity, 48),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -233,7 +341,24 @@ void _startCleanTimeCounter() {
       body: SafeArea(
         child: Column(
           children: [
-            // App title and emergency button
+            FutureBuilder<bool>(
+  future: _permissionFuture,
+  builder: (context, snapshot) {
+     if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+                final bool allPermissionsGranted = snapshot.data ?? false;
+                if (!allPermissionsGranted) {
+                  return _buildPermissionNotification(context);
+                }
+                return const SizedBox.shrink();
+  },
+),
+
+              // App title and emergency button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
@@ -251,6 +376,7 @@ void _startCleanTimeCounter() {
                 ],
               ),
             ),
+            
 
             // Main content with balanced distribution
             Expanded(
@@ -276,7 +402,9 @@ void _startCleanTimeCounter() {
                         child: Column(
                           children: [
                             SizedBox(
-                              height: MediaQuery.of(context).size.height * 0.25, // Responsive height
+                              height:
+                                  MediaQuery.of(context).size.height *
+                                  0.25, // Responsive height
                               child: PageView.builder(
                                 controller: _pageController,
                                 itemCount: 3,
@@ -324,14 +452,16 @@ void _startCleanTimeCounter() {
                                                   MainAxisAlignment.center,
                                               children: [
                                                 Text(
-                                                  dailyContent[index]['icon'] ?? '',
+                                                  dailyContent[index]['icon'] ??
+                                                      '',
                                                   style: const TextStyle(
                                                     fontSize: 24,
                                                   ),
                                                 ),
                                                 const SizedBox(width: 8),
                                                 Text(
-                                                  dailyContent[index]['type'] ?? '',
+                                                  dailyContent[index]['type'] ??
+                                                      '',
                                                   style: const TextStyle(
                                                     fontSize: 16,
                                                     fontWeight: FontWeight.bold,
@@ -412,9 +542,10 @@ void _startCleanTimeCounter() {
                                     ),
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: contentIndex == index
-                                          ? const Color(0xFF2196F3)
-                                          : Colors.grey.shade300,
+                                      color:
+                                          contentIndex == index
+                                              ? const Color(0xFF2196F3)
+                                              : Colors.grey.shade300,
                                     ),
                                   ),
                                 ),
@@ -483,7 +614,9 @@ void _startCleanTimeCounter() {
                                   Container(
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF2196F3).withOpacity(0.1),
+                                      color: const Color(
+                                        0xFF2196F3,
+                                      ).withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: const Icon(
@@ -494,7 +627,8 @@ void _startCleanTimeCounter() {
                                   ),
                                   const SizedBox(width: 12),
                                   Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         "Supreme test",
@@ -518,93 +652,114 @@ void _startCleanTimeCounter() {
                               const SizedBox(height: 20),
                               _hasStartedJourney
                                   ? Container(
-                                      padding: const EdgeInsets.all(15),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF2196F3).withOpacity(0.05),
-                                        borderRadius: BorderRadius.circular(15),
-                                        border: Border.all(
-                                          color: const Color(0xFF2196F3).withOpacity(0.2),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          const Text(
-                                            "Your Journey",
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              color: Color(0xFF2196F3),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 10),
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceEvenly,
-                                            children: [
-                                              _buildTimeBlock(
-                                                  cleanDays.toString(), "DAYS"),
-                                              _buildTimeBlock(
-                                                  cleanHours.toString(), "HOURS"),
-                                              _buildTimeBlock(
-                                                  cleanMinutes.toString(), "MINS"),
-                                              _buildTimeBlock(
-                                                  cleanSeconds.toString(), "SECS"),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : Text(
-                                      "Begin your journey to digital purity and self-control. Our advanced protection system will help you stay on track.",
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.grey.shade700,
-                                        height: 1.5,
+                                    padding: const EdgeInsets.all(15),
+                                    decoration: BoxDecoration(
+                                      color: const Color(
+                                        0xFF2196F3,
+                                      ).withOpacity(0.05),
+                                      borderRadius: BorderRadius.circular(15),
+                                      border: Border.all(
+                                        color: const Color(
+                                          0xFF2196F3,
+                                        ).withOpacity(0.2),
+                                        width: 1,
                                       ),
                                     ),
+                                    child: Column(
+                                      children: [
+                                        const Text(
+                                          "Your Journey",
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF2196F3),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 10),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceEvenly,
+                                          children: [
+                                            _buildTimeBlock(
+                                              cleanDays.toString(),
+                                              "DAYS",
+                                            ),
+                                            _buildTimeBlock(
+                                              cleanHours.toString(),
+                                              "HOURS",
+                                            ),
+                                            _buildTimeBlock(
+                                              cleanMinutes.toString(),
+                                              "MINS",
+                                            ),
+                                            _buildTimeBlock(
+                                              cleanSeconds.toString(),
+                                              "SECS",
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                  : Text(
+                                    "Begin your journey to digital purity and self-control. Our advanced protection system will help you stay on track.",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey.shade700,
+                                      height: 1.5,
+                                    ),
+                                  ),
                               const SizedBox(height: 20),
                               _hasStartedJourney
                                   ? Container(
-                                      width: double.infinity,
-                                      padding: const EdgeInsets.symmetric(vertical: 15),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF2196F3).withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(15),
-                                        border: Border.all(
-                                          color: const Color(0xFF2196F3).withOpacity(0.3),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: const Text(
-                                        "Your Journey Has Started",
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF2196F3),
-                                        ),
-                                      ),
-                                    )
-                                  : ElevatedButton(
-                                      onPressed: _navigateToAcceptancePage,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFF2196F3),
-                                        foregroundColor: Colors.white,
-                                        minimumSize: const Size(double.infinity, 50),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(15),
-                                        ),
-                                        elevation: 0,
-                                      ),
-                                      child: const Text(
-                                        "Begin Your Journey",
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 15,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(
+                                        0xFF2196F3,
+                                      ).withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(15),
+                                      border: Border.all(
+                                        color: const Color(
+                                          0xFF2196F3,
+                                        ).withOpacity(0.3),
+                                        width: 1,
                                       ),
                                     ),
+                                    alignment: Alignment.center,
+                                    child: const Text(
+                                      "Your Journey Has Started",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF2196F3),
+                                      ),
+                                    ),
+                                  )
+                                  : ElevatedButton(
+                                    onPressed: _navigateToAcceptancePage,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF2196F3),
+                                      foregroundColor: Colors.white,
+                                      minimumSize: const Size(
+                                        double.infinity,
+                                        50,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(15),
+                                      ),
+                                      elevation: 0,
+                                    ),
+                                    child: const Text(
+                                      "Begin Your Journey",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
                             ],
                           ),
                         ),
@@ -643,18 +798,20 @@ void _startCleanTimeCounter() {
           ),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFeatureItem(IconData icon, String title, String subtitle,
-      Color color, VoidCallback onTap) {
+  Widget _buildFeatureItem(
+    IconData icon,
+    String title,
+    String subtitle,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -668,11 +825,7 @@ void _startCleanTimeCounter() {
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 22,
-              ),
+              child: Icon(icon, color: color, size: 22),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -689,10 +842,7 @@ void _startCleanTimeCounter() {
                   ),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                   ),
                 ],
               ),

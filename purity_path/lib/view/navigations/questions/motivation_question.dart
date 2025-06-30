@@ -13,7 +13,7 @@ class MotivationQuestion extends StatelessWidget {
 
 
   const MotivationQuestion({
-    Key? key,
+    super.key,
     required this.selectedValue,
     required this.onValueChanged,
     required this.onNext,
@@ -21,7 +21,7 @@ class MotivationQuestion extends StatelessWidget {
     required this.canProceed,
     this.nextButtonText = 'Next',
 
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

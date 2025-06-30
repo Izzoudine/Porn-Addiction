@@ -3,12 +3,12 @@ import 'package:purity_path/utils/consts.dart';
 import 'package:purity_path/utils/routes/routes_name.dart';
 
 class GoalsInformation extends StatefulWidget {
-  final Map<String, dynamic> responses;
+  //final Map<String, dynamic> responses;
 
   const GoalsInformation({
-    Key? key,
-    required this.responses,
-  }) : super(key: key);
+    super.key,
+   // required this.responses,
+  });
 
   @override
   State<GoalsInformation> createState() => _GoalsInformationState();
@@ -152,7 +152,7 @@ class _GoalsInformationState extends State<GoalsInformation> with SingleTickerPr
                             ],
                           ),
                           const SizedBox(height: 16),
-                          const Center(child:         const Text(
+                          const Center(child:         Text(
                             'Breaking a habit typically takes anywhere from 18 to 66 days, depending on the person, the habit, and the consistency of effort.',
                             style: TextStyle(
                               fontSize: 15,

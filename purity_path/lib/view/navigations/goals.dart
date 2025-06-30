@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class GoalsPage extends StatefulWidget {
-  const GoalsPage({Key? key}) : super(key: key);
+  const GoalsPage({super.key});
 
   @override
   State<GoalsPage> createState() => _GoalsPageState();

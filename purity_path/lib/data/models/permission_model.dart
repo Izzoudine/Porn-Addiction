@@ -9,6 +9,9 @@ class PermissionItem {
   final Color color;
   PermissionStatus? status;
   final bool isAccessibility;
+  final bool isNotifications;
+  final bool isAdmin;
+  final bool isOverlay;
   bool isEnabled;
 
   PermissionItem({
@@ -19,6 +22,9 @@ class PermissionItem {
     required this.color,
     this.status,
     this.isAccessibility = false,
+    this.isNotifications = false,
     this.isEnabled = false,
+    this.isAdmin = false,
+    this.isOverlay = false,
   });
 }
