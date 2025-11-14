@@ -24,7 +24,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.purity_path"
-        minSdk = 23 // Ensure this is setobject
+        minSdk = flutter.minSdkVersion // Ensure this is setobject
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

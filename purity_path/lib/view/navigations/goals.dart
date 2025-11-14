@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:purity_path/data/services/phase_manager.dart';
+import 'package:purity_path/data/models/reduction_phase.dart';
+import 'package:purity_path/data/services/session_tracker.dart';
 
 class GoalsPage extends StatefulWidget {
   const GoalsPage({super.key});
@@ -14,6 +16,12 @@ class _GoalsPageState extends State<GoalsPage> {
   int cleanDays = 0;
   DateTime? _lastRelapseDate;
   bool _hasStartedJourney = false;
+  
+  // Phase-related state
+  ReductionPhase? _currentPhase;
+  List<ReductionPhase>? _allPhases;
+  int _currentPhaseIndex = 0;
+  int _weeklySessionCount = 0;
   
   // Define goals/milestones with icons
   final List<Map<String, dynamic>> goals = [
@@ -85,8 +93,18 @@ class _GoalsPageState extends State<GoalsPage> {
       }
     }
     
+    // Load phase data
+    final currentPhase = await PhaseManager.getCurrentPhase();
+    final allPhases = await PhaseManager.loadPlan();
+    final currentIndex = prefs.getInt('current_phase_index') ?? 0;
+    final weeklyCount = await SessionTracker.getWeeklySessionCount();
+    
     setState(() {
       _lastRelapseDate = lastRelapseDate;
+      _currentPhase = currentPhase;
+      _allPhases = allPhases;
+      _currentPhaseIndex = currentIndex;
+      _weeklySessionCount = weeklyCount;
     });
   }
 
@@ -179,7 +197,10 @@ class _GoalsPageState extends State<GoalsPage> {
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context);
+                // Navigate back to the home page using the bottom navigation
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2196F3),
@@ -206,6 +227,13 @@ class _GoalsPageState extends State<GoalsPage> {
   Widget _buildGoalsContent() {
     return CustomScrollView(
       slivers: [
+        // Phase Progress Card
+        if (_currentPhase != null)
+          SliverToBoxAdapter(
+            child: _buildPhaseProgressCard(),
+          ),
+        
+        // Clean Days Progress Card
         SliverToBoxAdapter(
           child: Container(
             width: double.infinity,
@@ -588,6 +616,345 @@ class _GoalsPageState extends State<GoalsPage> {
           child: SizedBox(height: 20),
         ),
       ],
+    );
+  }
+  
+  Widget _buildPhaseProgressCard() {
+    if (_currentPhase == null || _allPhases == null) return const SizedBox.shrink();
+    
+    final totalPhases = _allPhases!.length;
+    final completedPhases = _currentPhaseIndex;
+    final phasePercentage = totalPhases > 0 ? (completedPhases / totalPhases * 100) : 0.0;
+    
+    // Determine phase type icon and color
+    IconData phaseIcon;
+    Color phaseColor;
+    String phaseTitle;
+    
+    switch (_currentPhase!.phaseType) {
+      case 'duration':
+        phaseIcon = Icons.timer;
+        phaseColor = const Color(0xFF2196F3);
+        phaseTitle = 'Duration Reduction Phase';
+        break;
+      case 'frequency':
+        phaseIcon = Icons.repeat;
+        phaseColor = const Color(0xFF9C27B0);
+        phaseTitle = 'Frequency Reduction Phase';
+        break;
+      case 'spacing':
+        phaseIcon = Icons.calendar_today;
+        phaseColor = const Color(0xFFFF9800);
+        phaseTitle = _currentPhase!.spacingLimit == 'biweekly' 
+          ? 'Biweekly Phase' 
+          : 'Monthly Phase';
+        break;
+      case 'complete':
+        phaseIcon = Icons.emoji_events;
+        phaseColor = const Color(0xFF4CAF50);
+        phaseTitle = 'Complete Control';
+        break;
+      default:
+        phaseIcon = Icons.flag;
+        phaseColor = const Color(0xFF2196F3);
+        phaseTitle = 'Recovery Phase';
+    }
+    
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [phaseColor.withOpacity(0.1), phaseColor.withOpacity(0.05)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: phaseColor.withOpacity(0.3), width: 2),
+      ),
+      child: Column(
+        children: [
+          // Header with phase info
+          Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: phaseColor.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        phaseIcon,
+                        color: phaseColor,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            phaseTitle,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: phaseColor,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Phase ${_currentPhase!.phaseNumber} • Week ${_currentPhase!.weekNumber}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF666666),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: phaseColor.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${phasePercentage.toStringAsFixed(0)}%',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: phaseColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                // Phase description
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    _currentPhase!.description,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF333333),
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Current Limits Section
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.shield_outlined,
+                            size: 18,
+                            color: phaseColor,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Current Limits',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF333333),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      
+                      // Duration Limit
+                      if (_currentPhase!.durationLimit != null && _currentPhase!.durationLimit! > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.timer_outlined,
+                                size: 16,
+                                color: phaseColor.withOpacity(0.7),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Maximum ${_currentPhase!.durationLimit} minutes per session',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF666666),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      
+                      // Frequency Limit
+                      if (_currentPhase!.frequencyLimit != null && _currentPhase!.frequencyLimit! > 0)
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_month_outlined,
+                              size: 16,
+                              color: phaseColor.withOpacity(0.7),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Maximum ${_currentPhase!.frequencyLimit} session${_currentPhase!.frequencyLimit! > 1 ? 's' : ''} per week (${_weeklySessionCount}/${_currentPhase!.frequencyLimit} used this week)',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: _weeklySessionCount >= _currentPhase!.frequencyLimit!
+                                    ? const Color(0xFFFF5252)
+                                    : const Color(0xFF666666),
+                                  fontWeight: _weeklySessionCount >= _currentPhase!.frequencyLimit!
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      
+                      // Spacing Limit
+                      if (_currentPhase!.spacingLimit != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.event_repeat_outlined,
+                                size: 16,
+                                color: phaseColor.withOpacity(0.7),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _currentPhase!.spacingLimit == 'biweekly'
+                                  ? 'Only once every 2 weeks'
+                                  : _currentPhase!.spacingLimit == 'monthly'
+                                    ? 'Only once per month'
+                                    : 'Complete control achieved',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF666666),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Phase Progress Bar
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Overall Phase Progress',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF666666),
+                          ),
+                        ),
+                        Text(
+                          '$completedPhases of $totalPhases phases',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: phaseColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: LinearProgressIndicator(
+                        value: totalPhases > 0 ? completedPhases / totalPhases : 0,
+                        minHeight: 10,
+                        backgroundColor: Colors.grey.shade200,
+                        valueColor: AlwaysStoppedAnimation<Color>(phaseColor),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                // Phase dates
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.play_arrow,
+                            size: 14,
+                            color: Color(0xFF666666),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Started: ${_formatDate(_currentPhase!.startDate)}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF666666),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_currentPhase!.completedDate != null)
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.check_circle,
+                              size: 14,
+                              color: Color(0xFF4CAF50),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Completed: ${_formatDate(_currentPhase!.completedDate!)}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF4CAF50),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
   

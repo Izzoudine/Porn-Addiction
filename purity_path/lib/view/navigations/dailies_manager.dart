@@ -70,6 +70,9 @@ class DailiesManager {
       );
       await prefs.setString(_prefsKey, jsonString);
       await prefs.setString("update", updateData);
+      
+      // Update in-memory data
+      _allDailies = allData;
       print('Saved data: $allData');
 
       return true;
@@ -85,6 +88,7 @@ class DailiesManager {
     // Check if data exists in SharedPreferences
     if (prefs.containsKey(_prefsKey)) {
       await loadDailies(); // Load existing data into _allDailies
+      print('Loaded dailies from cache: ${_allDailies.keys}');
       return;
     }
 
@@ -104,7 +108,7 @@ class DailiesManager {
           );
         }
         allData[section] = contentList;
-        print("The data is $contentList");
+        print("Fetched $section: ${contentList.length} items");
       } catch (e) {
         print('Error fetching /$section: $e');
       }
@@ -121,6 +125,7 @@ class DailiesManager {
     );
     // Update the in-memory data
     _allDailies = allData;
+    print('Saved and loaded dailies from Firestore: ${_allDailies.keys}');
   }
 
   // Get all dailies (from SharedPreferences)

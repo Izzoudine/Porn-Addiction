@@ -1,0 +1,73 @@
+The goal of the app is to help users gradually overcome porn addiction by reducing their viewing time and frequency step by step.
+
+🧩 Step 1: Account Setup
+
+When creating an account, the user is asked two questions:
+
+Frequency – How often they watch porn per week (1–7+ times).
+
+Duration – How long each session usually lasts (10–60 minutes).
+
+⚙️ Phase 1: Reduce Duration per Session
+
+The app first focuses on reducing how long the user watches.
+
+Each week, the allowed duration per session is reduced by about one-third.
+
+Example:
+
+If the user starts with 60 minutes, the plan goes:
+
+Week 1: 40 minutes
+
+Week 2: 20 minutes
+
+Week 3: 10 minutes
+
+If the user starts with 50 minutes:
+
+Week 1: 40 minutes
+
+Week 2: 20 minutes
+
+Week 3: 10 minutes
+
+If the user starts with 30 minutes:
+
+Week 1: 20 minutes
+
+Week 2: 10 minutes
+
+If the user starts with 20 minutes:
+
+Week 1: 10 minutes
+
+📱 How it works technically:
+
+The app uses accessibility features to monitor the user’s screen.
+
+When it detects adult content for more than 1 minute, it considers that a “session” has started.
+
+A timer begins counting.
+
+Once the user reaches the current week’s allowed duration, the app blocks access to adult content for the rest of that session.
+
+🗓️ Phase 2: Reduce Weekly Frequency
+
+Once the session duration has been reduced to 10 minutes, the next goal is to reduce how often the user watches.
+
+If the user watches 4–7 times a week, reduce by 2 times each week until they reach 1 time per week.
+
+If the user watches 2–3 times a week, reduce by 1 time each week until they reach 1 time per week.
+
+📆 Phase 3: Reduce to Every 2 Weeks
+
+When the user is down to once a week:
+
+They move to watching once every 2 weeks.
+
+🕊️ Phase 4: Final Reduction
+
+Finally, the goal is to:
+
+Move from 2 times a month → once a month → complete control (no compulsion).

@@ -22,7 +22,7 @@ class PermissionService {
   //     print("Failed to request device admin permission: ${e.message}");
   //   }
   // }
- 
+
   static Future<bool> requestDeviceAdminPermission(String message) async {
     try {
       return await DevicePolicyManager.requestPermession(message);
@@ -64,11 +64,9 @@ class PermissionService {
 
   static Future<void> requestAccessibilityPermission() async {
     try {
-
       await platform.invokeMethod('requestAccessibilityPermission');
 
       print("After service");
-
     } on PlatformException catch (e) {
       print("Failed to request accessibility permission: ${e.message}");
       rethrow;

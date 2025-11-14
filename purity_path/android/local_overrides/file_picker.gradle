@@ -1,0 +1,19 @@
+// Override for file_picker plugin to fix JVM target compatibility
+afterEvaluate { project ->
+    if (project.name == 'file_picker') {
+        // Fix JVM target compatibility
+        project.android {
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_1_8
+                targetCompatibility JavaVersion.VERSION_1_8
+            }
+        }
+        
+        // Fix Kotlin JVM target
+        project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+            kotlinOptions {
+                jvmTarget = "1.8"
+            }
+        }
+    }
+}

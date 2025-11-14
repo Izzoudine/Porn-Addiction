@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:purity_path/utils/consts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:purity_path/data/services/phase_manager.dart';
 import 'questions/frequency_question.dart';
 import 'questions/quantity_question.dart';
 import 'questions/triggers_question.dart';
@@ -44,6 +45,15 @@ class _QuestionnaireManagerState extends State<QuestionnaireManager> {
         curve: Curves.easeInOut,
       );
     } else {
+      // Generate and save the reduction plan
+      if (frequencyResponse != null && quantityResponse != null) {
+        final phases = PhaseManager.generateReductionPlan(
+          initialDurationMinutes: quantityResponse!,
+          initialFrequencyPerWeek: frequencyResponse!,
+        );
+        await PhaseManager.savePlan(phases);
+      }
+      
       final prefs = await SharedPreferences.getInstance();
       final isGuest = prefs.getBool("isGuest") ?? false;
 

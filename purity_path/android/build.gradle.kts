@@ -24,6 +24,13 @@ rootProject.layout.buildDirectory.value(newBuildDir)
 subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
+    
+    // Apply local overrides for plugins
+    val overrideFile = file("${rootProject.projectDir}/local_overrides/${project.name}.gradle")
+    if (overrideFile.exists()) {
+        apply(from = overrideFile)
+    }
+    
     // Ensure Java 11 compatibility
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions {

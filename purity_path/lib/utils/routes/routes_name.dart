@@ -10,6 +10,4 @@ class RoutesName {
   static const String permissions = '/permissions';
   static const String questionnaireManager = '/questionnaireManager';
   static const String questionnaireIntro = '/questionnaireIntro';
-
-
 }

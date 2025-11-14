@@ -3,6 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:purity_path/data/services/notification_service.dart';
+import 'package:purity_path/data/services/session_monitor_service.dart';
+import 'package:purity_path/data/services/ai_voice_intervention_service.dart';
 import 'package:purity_path/utils/routes/routes.dart';
 import 'package:purity_path/utils/routes/routes_name.dart';
 import 'package:purity_path/view/navigations/dailiy_update.dart';
@@ -12,8 +14,10 @@ import 'package:purity_path/view/navigations/welcome.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  DailiesUpdater.checkForUpdatesOnStart();
+  await DailiesUpdater.checkForUpdatesOnStart();
   await NotificationService.initialize();
+  await SessionMonitorService.initialize(); // Initialize session monitoring
+  await AIVoiceInterventionService.initialize(); // Initialize AI voice intervention
 
   runApp(const MyApp());
 }

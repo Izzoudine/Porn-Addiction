@@ -19,6 +19,8 @@ import android.content.Intent
 import android.app.ActivityManager
 import java.util.regex.Pattern
 import kotlinx.coroutines.*
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
 
 class NoFapIslamAccessibilityService : AccessibilityService() {
     
@@ -26,7 +28,12 @@ class NoFapIslamAccessibilityService : AccessibilityService() {
         private const val TAG = "NoFapAccessibilityService"
         private const val SCAN_DEBOUNCE_DELAY = 500L // ms
         private const val MAX_SCAN_DEPTH = 10
+        private const val CHANNEL = "com.example.purity_path/session"
     }
+    
+    private var methodChannel: MethodChannel? = null
+    private var isTrackingSession = false
+    private var sessionStartTime: Long = 0
     
     // Enhanced keyword detection with regex patterns
 private val adultPatterns = listOf(
@@ -65,43 +72,149 @@ private val adultPatterns = listOf(
     private val handler = Handler(Looper.getMainLooper())
     private var scanRunnable: Runnable? = null
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var timerTextView: TextView? = null
+    private var timerUpdateRunnable: Runnable? = null
     
     override fun onServiceConnected() {
         super.onServiceConnected()
         Log.d(TAG, "Accessibility Service connected")
+        
+        // Start the monitoring foreground service to keep this service alive
+        try {
+            val intent = Intent(this, AccessibilityMonitorService::class.java)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                startForegroundService(intent)
+            } else {
+                startService(intent)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start monitoring service: ${e.message}")
+        }
     }
     
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         event?.let { accessibilityEvent ->
             val packageName = accessibilityEvent.packageName?.toString()
             
-            // Skip if already showing overlay or package is whitelisted
-            if (isOverlayShown || packageName in whitelistedPackages) {
+            // Skip if package is whitelisted
+            if (packageName in whitelistedPackages) {
+                // If we were tracking, stop tracking since user left adult content
+                if (isTrackingSession) {
+                    endTrackingSession()
+                }
                 return
             }
             
-            // Immediately block known adult apps
-            if (packageName in blockedPackages) {
-                Log.d(TAG, "Blocked app detected: $packageName")
-                showBlockingOverlay("Blocked Application", packageName)
-                return
-            }
+            // Check for blocked apps or adult content
+            val isAdultContent = packageName in blockedPackages
             
-            // Debounce content scanning to avoid excessive processing
-            scanRunnable?.let { handler.removeCallbacks(it) }
-            scanRunnable = Runnable {
-                serviceScope.launch {
-                    withContext(Dispatchers.Default) {
-                        scanForAdultContent(rootInActiveWindow, 0)
+            if (!isAdultContent) {
+                // Debounce content scanning to avoid excessive processing
+                scanRunnable?.let { handler.removeCallbacks(it) }
+                scanRunnable = Runnable {
+                    serviceScope.launch {
+                        withContext(Dispatchers.Default) {
+                            val detected = scanForAdultContent(rootInActiveWindow, 0)
+                            withContext(Dispatchers.Main) {
+                                if (detected) {
+                                    handleAdultContentDetected()
+                                } else if (isTrackingSession) {
+                                    // Adult content not detected anymore, stop tracking
+                                    endTrackingSession()
+                                }
+                            }
+                        }
                     }
                 }
+                handler.postDelayed(scanRunnable!!, SCAN_DEBOUNCE_DELAY)
+            } else {
+                handleAdultContentDetected()
             }
-            handler.postDelayed(scanRunnable!!, SCAN_DEBOUNCE_DELAY)
         }
     }
     
-    private suspend fun scanForAdultContent(node: AccessibilityNodeInfo?, depth: Int) {
-        if (node == null || depth > MAX_SCAN_DEPTH || isOverlayShown) return
+    private fun handleAdultContentDetected() {
+        if (!isTrackingSession) {
+            // Start tracking session
+            startTrackingSession()
+        } else {
+            // Check if limits exceeded
+            checkAndEnforceLimits()
+        }
+    }
+    
+    private fun startTrackingSession() {
+        isTrackingSession = true
+        sessionStartTime = System.currentTimeMillis()
+        
+        // Show timer overlay
+        showTimerOverlay()
+        
+        // Notify Flutter to start session tracking
+        handler.post {
+            try {
+                MainActivity.methodChannel?.invokeMethod("startSession", null)
+                Log.d(TAG, "Session tracking started")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error starting session: ${e.message}")
+            }
+        }
+    }
+    
+    private fun checkAndEnforceLimits() {
+        val currentDuration = (System.currentTimeMillis() - sessionStartTime) / 1000 // seconds
+        
+        // Ask Flutter to check if limits are exceeded
+        handler.post {
+            try {
+                MainActivity.methodChannel?.invokeMethod("checkLimits", 
+                    mapOf("durationSeconds" to currentDuration.toInt()), 
+                    object : MethodChannel.Result {
+                        override fun success(result: Any?) {
+                            val shouldBlock = result as? Boolean ?: false
+                            if (shouldBlock) {
+                                showBlockingOverlay("Phase Limit Reached", 
+                                    "You've reached your limit for this phase. Take a break!")
+                                endTrackingSession()
+                            }
+                        }
+                        
+                        override fun error(p0: String, p1: String?, p2: Any?) {
+                            Log.e(TAG, "Error checking limits: $p1")
+                        }
+                        
+                        override fun notImplemented() {
+                            Log.e(TAG, "checkLimits method not implemented in Flutter")
+                        }
+                    })
+            } catch (e: Exception) {
+                Log.e(TAG, "Error checking limits: ${e.message}")
+            }
+        }
+    }
+    
+    private fun endTrackingSession() {
+        if (!isTrackingSession) return
+        
+        isTrackingSession = false
+        sessionStartTime = 0
+        
+        // Stop and remove timer overlay
+        stopTimerOverlay()
+        
+        // Notify Flutter to end session
+        handler.post {
+            try {
+                MainActivity.methodChannel?.invokeMethod("endSession", null)
+                Log.d(TAG, "Session tracking ended")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error ending session: ${e.message}")
+            }
+        }
+    }
+    
+    private suspend fun scanForAdultContent(node: AccessibilityNodeInfo?, depth: Int): Boolean {
+        if (node == null || depth > MAX_SCAN_DEPTH) return false
         
         try {
             // Check text content
@@ -109,34 +222,30 @@ private val adultPatterns = listOf(
             val contentDescription = node.contentDescription?.toString()
             
             if (containsAdultContent(text) || containsAdultContent(contentDescription)) {
-                withContext(Dispatchers.Main) {
-                    Log.d(TAG, "Adult content detected: ${text ?: contentDescription}")
-                    showBlockingOverlay("Inappropriate Content Detected", text ?: contentDescription)
-                }
-                return
+                Log.d(TAG, "Adult content detected: ${text ?: contentDescription}")
+                return true
             }
             
             // Check URL if it's a web view
-          if (node.className == "android.webkit.WebView") {
-  val url = node.text?.toString() ?: node.contentDescription?.toString()
-  if (url != null && containsAdultContent(url)) {
-    withContext(Dispatchers.Main) {
-      Log.d(TAG, "Adult URL detected: $url")
-      showBlockingOverlay("Inappropriate Website Detected", url)
-      performGlobalAction(GLOBAL_ACTION_BACK) // Navigate back
-    }
-    return
-  }
-}
+            if (node.className == "android.webkit.WebView") {
+                val url = node.text?.toString() ?: node.contentDescription?.toString()
+                if (url != null && containsAdultContent(url)) {
+                    Log.d(TAG, "Adult URL detected: $url")
+                    return true
+                }
+            }
             
             // Recursively check children with depth limit
             for (i in 0 until node.childCount) {
-                if (isOverlayShown) break
-                scanForAdultContent(node.getChild(i), depth + 1)
+                if (scanForAdultContent(node.getChild(i), depth + 1)) {
+                    return true
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error scanning node: ${e.message}")
         }
+        
+        return false
     }
     
     private fun containsAdultContent(text: String?): Boolean {
@@ -271,6 +380,89 @@ val reportButton = Button(this).apply {
         }
     }
     
+    private fun showTimerOverlay() {
+        if (timerTextView != null) return // Timer already shown
+        
+        try {
+            val windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+            
+            // Create timer text view
+            timerTextView = TextView(this).apply {
+                setTextColor(Color.WHITE)
+                textSize = 20f
+                gravity = Gravity.CENTER
+                setBackgroundColor(Color.parseColor("#CC000000"))
+                setPadding(30, 20, 30, 20)
+                text = "00:00"
+            }
+            
+            val params = WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                PixelFormat.TRANSLUCENT
+            ).apply {
+                gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+                y = 100 // Position from top
+            }
+            
+            windowManager.addView(timerTextView, params)
+            
+            // Start updating timer
+            startTimerUpdate()
+            
+            Log.d(TAG, "Timer overlay shown")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error showing timer overlay: ${e.message}")
+        }
+    }
+    
+    private fun startTimerUpdate() {
+        timerUpdateRunnable = object : Runnable {
+            override fun run() {
+                if (isTrackingSession && timerTextView != null) {
+                    val elapsedMillis = System.currentTimeMillis() - sessionStartTime
+                    val elapsedSeconds = elapsedMillis / 1000
+                    val minutes = (elapsedSeconds / 60).toInt()
+                    val seconds = (elapsedSeconds % 60).toInt()
+                    val hours = minutes / 60
+                    val remainingMinutes = minutes % 60
+                    
+                    val timeString = if (hours > 0) {
+                        String.format("%02d:%02d:%02d", hours, remainingMinutes, seconds)
+                    } else {
+                        String.format("%02d:%02d", minutes, seconds)
+                    }
+                    
+                    timerTextView?.text = "⏱️ $timeString"
+                    
+                    // Schedule next update
+                    handler.postDelayed(this, 1000) // Update every second
+                }
+            }
+        }
+        handler.post(timerUpdateRunnable!!)
+    }
+    
+    private fun stopTimerOverlay() {
+        timerUpdateRunnable?.let { handler.removeCallbacks(it) }
+        timerUpdateRunnable = null
+        
+        timerTextView?.let { view ->
+            try {
+                val windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+                windowManager.removeView(view)
+                timerTextView = null
+                Log.d(TAG, "Timer overlay removed")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error removing timer overlay: ${e.message}")
+            }
+        }
+    }
+    
     // Force close current app (use with caution)
     private fun forceCloseCurrentApp() {
         try {
@@ -295,6 +487,7 @@ val reportButton = Button(this).apply {
     override fun onDestroy() {
         super.onDestroy()
         removeOverlay()
+        stopTimerOverlay()
         serviceScope.cancel()
         scanRunnable?.let { handler.removeCallbacks(it) }
     }

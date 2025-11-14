@@ -1,19 +1,16 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
-
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:purity_path/data/services/permissions_service.dart';
+import 'package:purity_path/data/services/phase_manager.dart';
+import 'package:purity_path/data/models/reduction_phase.dart';
 import 'package:purity_path/utils/routes/routes_name.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../data/models/daily_model.dart';
 import 'acceptance.dart';
-import 'dailies_manager.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -22,18 +19,15 @@ class Home extends StatefulWidget {
   State<Home> createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
-  int cleanDays = 0;
-  int cleanHours = 0;
-  int cleanMinutes = 0;
-  int cleanSeconds = 0;
+class _HomeState extends State<Home> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   int contentIndex = 0;
   final PageController _pageController = PageController(initialPage: 0);
   String today = '';
   Timer? _autoScrollTimer;
-  Timer? _countUpdateTimer;
-  DateTime? _lastRelapseDate;
   bool _hasStartedJourney = false;
+  
+  // Phase tracking
+  ReductionPhase? _currentPhase;
 
   List<Map<String, String>> dailyContent = [
     {
@@ -57,6 +51,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadData();
     today = DateFormat('yyyy-MM-dd').format(DateTime.now());
     _checkAndUpdateDailyContent();
@@ -78,10 +73,6 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
         }
       }
     });
-
-    if (_hasStartedJourney) {
-      _startCleanTimeCounter();
-    }
   }
 
   void _navigateToPermissions() async {
@@ -104,17 +95,6 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     }
   }
 
-  void _startCleanTimeCounter() {
-    _countUpdateTimer?.cancel();
-    _countUpdateTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_lastRelapseDate != null && mounted) {
-        setState(() {
-          _updateCleanTimeCounter();
-        });
-      }
-    });
-  }
-
   Future<bool> checkPermission() async {
     try {
       final permitAccess =
@@ -132,10 +112,15 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     _autoScrollTimer?.cancel();
-    _countUpdateTimer?.cancel();
     super.dispose();
+  }
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Handle app lifecycle if needed
   }
 
   Future<void> _checkAndUpdateDailyContent() async {
@@ -181,52 +166,14 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
 
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
-    final lastRelapse =
-        prefs.getString('lastRelapse') ?? DateTime.now().toIso8601String();
-    final lastRelapseDate = DateTime.parse(lastRelapse);
     _hasStartedJourney = prefs.getBool('hasStartedJourney') ?? false;
+    
+    // Load current phase
+    final currentPhase = await PhaseManager.getCurrentPhase();
+    
     setState(() {
-      _lastRelapseDate = lastRelapseDate;
+      _currentPhase = currentPhase;
     });
-    if (_hasStartedJourney) {
-      _updateCleanTimeCounter();
-    }
-  }
-
-  void _updateCleanTimeCounter() {
-    if (_lastRelapseDate == null) return;
-    final now = DateTime.now();
-    final difference = now.difference(_lastRelapseDate!);
-    setState(() {
-      cleanDays = difference.inDays;
-      cleanHours = difference.inHours % 24;
-      cleanMinutes = difference.inMinutes % 60;
-      cleanSeconds = difference.inSeconds % 60;
-    });
-  }
-
-  void _logRelapse() async {
-    final now = DateTime.now();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('lastRelapse', now.toIso8601String());
-    List<String> history = prefs.getStringList('relapseHistory') ?? [];
-    history.add(now.toIso8601String());
-    await prefs.setStringList('relapseHistory', history);
-    setState(() {
-      _lastRelapseDate = now;
-      cleanDays = 0;
-      cleanHours = 0;
-      cleanMinutes = 0;
-      cleanSeconds = 0;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Relapse logged. Stay strong, every new day is a fresh start.',
-        ),
-        duration: Duration(seconds: 3),
-      ),
-    );
   }
 
   void _navigateToAcceptancePage() async {
@@ -240,13 +187,8 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       await prefs.setBool('hasStartedJourney', true);
       setState(() {
         _hasStartedJourney = true;
-        _lastRelapseDate = DateTime.now();
-        cleanDays = 0;
-        cleanHours = 0;
-        cleanMinutes = 0;
-        cleanSeconds = 0;
       });
-      _startCleanTimeCounter();
+      await _loadData(); // Reload phase data
     }
   }
 
@@ -568,36 +510,165 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                                     child: Column(
                                       children: [
                                         const Text(
-                                          "Your Journey",
+                                          "Your Current Phase",
                                           style: TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.bold,
                                             color: Color(0xFF2196F3),
                                           ),
                                         ),
-                                        const SizedBox(height: 10),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceEvenly,
-                                          children: [
-                                            _buildTimeBlock(
-                                              cleanDays.toString(),
-                                              "DAYS",
+                                        const SizedBox(height: 20),
+                                        if (_currentPhase != null) ...[
+                                          Container(
+                                            padding: const EdgeInsets.all(20),
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                colors: [
+                                                  _getPhaseColor(),
+                                                  _getPhaseColor().withOpacity(0.7),
+                                                ],
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                              ),
+                                              borderRadius: BorderRadius.circular(15),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: _getPhaseColor().withOpacity(0.3),
+                                                  blurRadius: 10,
+                                                  offset: const Offset(0, 5),
+                                                ),
+                                              ],
                                             ),
-                                            _buildTimeBlock(
-                                              cleanHours.toString(),
-                                              "HOURS",
+                                            child: Column(
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Container(
+                                                      padding: const EdgeInsets.all(15),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.white.withOpacity(0.2),
+                                                        borderRadius: BorderRadius.circular(15),
+                                                      ),
+                                                      child: Icon(
+                                                        _getPhaseIcon(),
+                                                        color: Colors.white,
+                                                        size: 40,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 15),
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        children: [
+                                                          Text(
+                                                            'Phase ${_currentPhase!.phaseNumber}',
+                                                            style: const TextStyle(
+                                                              color: Colors.white,
+                                                              fontSize: 24,
+                                                              fontWeight: FontWeight.bold,
+                                                            ),
+                                                          ),
+                                                          Text(
+                                                            'Week ${_currentPhase!.weekNumber}',
+                                                            style: TextStyle(
+                                                              color: Colors.white.withOpacity(0.9),
+                                                              fontSize: 16,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 15),
+                                                Container(
+                                                  padding: const EdgeInsets.all(15),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white.withOpacity(0.15),
+                                                    borderRadius: BorderRadius.circular(10),
+                                                  ),
+                                                  child: Column(
+                                                    children: [
+                                                      if (_currentPhase!.durationLimit != null)
+                                                        Row(
+                                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                          children: [
+                                                            const Text(
+                                                              'Max Duration:',
+                                                              style: TextStyle(
+                                                                color: Colors.white,
+                                                                fontSize: 14,
+                                                              ),
+                                                            ),
+                                                            Text(
+                                                              '${_currentPhase!.durationLimit} min',
+                                                              style: const TextStyle(
+                                                                color: Colors.white,
+                                                                fontSize: 14,
+                                                                fontWeight: FontWeight.bold,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      if (_currentPhase!.durationLimit != null && _currentPhase!.frequencyLimit != null)
+                                                        const SizedBox(height: 8),
+                                                      if (_currentPhase!.frequencyLimit != null)
+                                                        Row(
+                                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                          children: [
+                                                            const Text(
+                                                              'Max Frequency:',
+                                                              style: TextStyle(
+                                                                color: Colors.white,
+                                                                fontSize: 14,
+                                                              ),
+                                                            ),
+                                                            Text(
+                                                              '${_currentPhase!.frequencyLimit}/week',
+                                                              style: const TextStyle(
+                                                                color: Colors.white,
+                                                                fontSize: 14,
+                                                                fontWeight: FontWeight.bold,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      if (_currentPhase!.spacingLimit != null)
+                                                        Row(
+                                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                          children: [
+                                                            const Text(
+                                                              'Spacing:',
+                                                              style: TextStyle(
+                                                                color: Colors.white,
+                                                                fontSize: 14,
+                                                              ),
+                                                            ),
+                                                            Text(
+                                                              _currentPhase!.spacingLimit!,
+                                                              style: const TextStyle(
+                                                                color: Colors.white,
+                                                                fontSize: 14,
+                                                                fontWeight: FontWeight.bold,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                            _buildTimeBlock(
-                                              cleanMinutes.toString(),
-                                              "MINS",
+                                          ),
+                                        ] else ...[
+                                          const Text(
+                                            'Complete the questionnaire to see your phase',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey,
                                             ),
-                                            _buildTimeBlock(
-                                              cleanSeconds.toString(),
-                                              "SECS",
-                                            ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ],
                                     ),
                                   )
@@ -610,6 +681,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                                     ),
                                   ),
                               const SizedBox(height: 20),
+                              
                               _hasStartedJourney
                                   ? Container(
                                     width: double.infinity,
@@ -756,87 +828,38 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       ),
     );
   }
-
-  Widget _buildTimeBlock(String value, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2196F3).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: const Color(0xFF2196F3).withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2196F3),
-            ),
-          ),
-          Text(
-            label,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-          ),
-        ],
-      ),
-    );
+  
+  Color _getPhaseColor() {
+    if (_currentPhase == null) return const Color(0xFF2196F3);
+    
+    switch (_currentPhase!.phaseType) {
+      case 'duration':
+        return const Color(0xFF2196F3); // Blue
+      case 'frequency':
+        return const Color(0xFF9C27B0); // Purple
+      case 'spacing':
+        return const Color(0xFFFF9800); // Orange
+      case 'complete':
+        return const Color(0xFF4CAF50); // Green
+      default:
+        return const Color(0xFF2196F3);
+    }
   }
-
-  Widget _buildFeatureItem(
-    IconData icon,
-    String title,
-    String subtitle,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 22),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: Colors.grey.shade400,
-            ),
-          ],
-        ),
-      ),
-    );
+  
+  IconData _getPhaseIcon() {
+    if (_currentPhase == null) return Icons.flag;
+    
+    switch (_currentPhase!.phaseType) {
+      case 'duration':
+        return Icons.timer;
+      case 'frequency':
+        return Icons.event_repeat;
+      case 'spacing':
+        return Icons.calendar_today;
+      case 'complete':
+        return Icons.check_circle;
+      default:
+        return Icons.flag;
+    }
   }
 }

@@ -3,11 +3,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dailies_manager.dart';
 
 class DailiesUpdater {
-  static const String _prefsKey = 'dailies_data';
 
   static Future<void> checkForUpdatesOnStart() async {
     try {
       await DailiesManager.fetchAndSaveDailiesOnce();
+      // Load data into memory after fetching
+      await DailiesManager.loadDailies();
       print("Enter the checkforupdatesonstart");
       
       final prefs = await SharedPreferences.getInstance();
@@ -19,6 +20,8 @@ class DailiesUpdater {
       if (currentTime - lastUpdateTime > 24 * 60 * 60 * 1000) {
         final updated = await DailiesManager.checkUpdateAndFetchData();
         if (updated) {
+          // Reload data into memory after update
+          await DailiesManager.loadDailies();
           await prefs.setInt('last_dailies_update_time', currentTime);
         }
       } else {

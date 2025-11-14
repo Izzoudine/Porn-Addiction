@@ -6,6 +6,8 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     
     <application
@@ -45,6 +47,17 @@
                 android:resource="@xml/accessibility_service_config" />
         </service>
 
+        <!-- Foreground service to monitor accessibility service -->
+        <service
+            android:name=".AccessibilityMonitorService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="accessibility_monitor" />
+        </service>
+
         <!-- <service
             android:name=".NoFapIslamVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
@@ -67,6 +80,16 @@
         <action android:name="android.app.action.ACTION_DEVICE_ADMIN_DISABLED" />
     </intent-filter>
 </receiver>
+
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
 
 
         <meta-data

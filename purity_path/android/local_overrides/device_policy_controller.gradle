@@ -1,0 +1,33 @@
+// Override for device_policy_controller plugin to add namespace and fix manifest
+afterEvaluate { project ->
+    if (project.name == 'device_policy_controller') {
+        // Set the namespace
+        project.android {
+            namespace = 'com.itisnajim.device_policy_controller'
+            
+            // Fix JVM target compatibility
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_1_8
+                targetCompatibility JavaVersion.VERSION_1_8
+            }
+        }
+        
+        // Fix Kotlin JVM target
+        project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+            kotlinOptions {
+                jvmTarget = "1.8"
+            }
+        }
+        
+        // Remove package attribute from AndroidManifest.xml before any tasks run
+        def manifestFile = new File("${project.projectDir}/src/main/AndroidManifest.xml")
+        if (manifestFile.exists()) {
+            def manifestText = manifestFile.text
+            if (manifestText.contains('package=')) {
+                manifestText = manifestText.replaceAll('\\s*package\\s*=\\s*"[^"]*"', '')
+                manifestFile.write(manifestText)
+                logger.lifecycle("Removed package attribute from ${project.name} AndroidManifest.xml")
+            }
+        }
+    }
+}

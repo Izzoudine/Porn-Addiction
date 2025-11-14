@@ -13,6 +13,8 @@ class Lessons extends StatefulWidget {
 class _LessonsScreenState extends State<Lessons>
     with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late TabController _tabController;
+  Map<String, List<DailyContent>> _dailies = {};
+  bool _isLoading = true;
 
   @override
   bool get wantKeepAlive => true;
@@ -21,6 +23,28 @@ class _LessonsScreenState extends State<Lessons>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadDailies();
+  }
+
+  Future<void> _loadDailies() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    // Try to get data synchronously first
+    _dailies = DailiesManager.getAllDailiesSync();
+    
+    // If empty, load from SharedPreferences
+    if (_dailies.isEmpty) {
+      await DailiesManager.loadDailies();
+      _dailies = DailiesManager.getAllDailiesSync();
+    }
+    
+    setState(() {
+      _isLoading = false;
+    });
+    
+    print('Loaded dailies: ${_dailies.keys}, duas: ${_dailies['duas']?.length ?? 0}, hadiths: ${_dailies['hadiths']?.length ?? 0}, motivations: ${_dailies['motivations']?.length ?? 0}');
   }
 
   @override
@@ -38,143 +62,207 @@ class _LessonsScreenState extends State<Lessons>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    // Load data synchronously from SharedPreferences
-    final dailies = DailiesManager.getAllDailiesSync();
-    print('Dailies in UI: ${dailies.entries.map((e) => "${e.key}: ${e.value.map((d) => "${d.name} (ID: ${d.id})").toList()}").join(", ")}');
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 5),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Lessons',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(AppColors.primary), // Adjust AppColors.primary as needed
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const Text(
-                    'Islamic guidance for your journey',
-                    style: TextStyle(
-                      fontSize: 16,
+        child: _isLoading
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
                       color: Color(AppColors.primary),
-                      fontStyle: FontStyle.italic,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 15),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              child: Theme(
-                data: Theme.of(context).copyWith(
-                  highlightColor: Colors.transparent,
-                  splashColor: Colors.transparent,
+                    SizedBox(height: 20),
+                    Text(
+                      'Loading lessons...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Color(AppColors.primary),
+                      ),
+                    ),
+                  ],
                 ),
-                child: SizedBox(
-                  height: 50,
-                  child: TabBar(
-                    controller: _tabController,
-                    indicator: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      color: Color(AppColors.primary),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Color(AppColors.primary).withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
+              )
+            : _dailies.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.cloud_off,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 20),
+                        Text(
+                          'No lessons available',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        Text(
+                          'Please check your internet connection\nand restart the app',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: _loadDailies,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(AppColors.primary),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 30,
+                              vertical: 15,
+                            ),
+                          ),
+                          child: Text(
+                            'Retry',
+                            style: TextStyle(color: Colors.white),
+                          ),
                         ),
                       ],
                     ),
-                    labelColor: Colors.white,
-                    unselectedLabelColor: Colors.grey.shade800,
-                    labelStyle: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                    unselectedLabelStyle: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 15,
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 5),
-                    dividerColor: Colors.transparent,
-                    isScrollable: false,
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    tabs: [
-                      SizedBox(
-                        width: double.infinity,
-                        child: const Center(child: Text('Duas')),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 5),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Lessons',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Color(AppColors.primary),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const Text(
+                              'Islamic guidance for your journey',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Color(AppColors.primary),
+                                fontStyle: FontStyle.italic,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
                       ),
-                      SizedBox(
-                        width: double.infinity,
-                        child: const Center(child: Text('Hadiths')),
+                      const SizedBox(height: 15),
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Theme(
+                          data: Theme.of(context).copyWith(
+                            highlightColor: Colors.transparent,
+                            splashColor: Colors.transparent,
+                          ),
+                          child: SizedBox(
+                            height: 50,
+                            child: TabBar(
+                              controller: _tabController,
+                              indicator: BoxDecoration(
+                                borderRadius: BorderRadius.circular(14),
+                                color: Color(AppColors.primary),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Color(AppColors.primary)
+                                        .withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              labelColor: Colors.white,
+                              unselectedLabelColor: Colors.grey.shade800,
+                              labelStyle: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                              unselectedLabelStyle: const TextStyle(
+                                fontWeight: FontWeight.w500,
+                                fontSize: 15,
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 5),
+                              dividerColor: Colors.transparent,
+                              isScrollable: false,
+                              indicatorSize: TabBarIndicatorSize.tab,
+                              tabs: [
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: const Center(child: Text('Duas')),
+                                ),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: const Center(child: Text('Hadiths')),
+                                ),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: const Center(
+                                    child: Text(
+                                      'Motivations',
+                                      style: TextStyle(fontSize: 14),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                      SizedBox(
-                        width: double.infinity,
-                        child: const Center(child: Text('Motivations', style: TextStyle(fontSize: 14))),
+                      const SizedBox(height: 20),
+                      Expanded(
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _buildTabContent('duas'),
+                            _buildTabContent('hadiths'),
+                            _buildTabContent('motivations'),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 15),
-                    children: (dailies['duas'] ?? []).map((daily) {
-                      final colors = sectionColors['duas']!;
-                      return _buildResourceCard(
-                        daily,
-                        colors['bg']!,
-                        colors['accent']!,
-                        () => _navigateToDetailPage(context, daily, colors['accent']!),
-                      );
-                    }).toList(),
-                  ),
-                  ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 15),
-                    children: (dailies['hadiths'] ?? []).map((daily) {
-                      final colors = sectionColors['hadiths']!;
-                      return _buildResourceCard(
-                        daily,
-                        colors['bg']!,
-                        colors['accent']!,
-                        () => _navigateToDetailPage(context, daily, colors['accent']!),
-                      );
-                    }).toList(),
-                  ),
-                  ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 15),
-                    children: (dailies['motivations'] ?? []).map((daily) {
-                      final colors = sectionColors['motivations']!;
-                      return _buildResourceCard(
-                        daily,
-                        colors['bg']!,
-                        colors['accent']!,
-                        () => _navigateToDetailPage(context, daily, colors['accent']!),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
+    );
+  }
+
+  Widget _buildTabContent(String section) {
+    final sectionData = _dailies[section] ?? [];
+    final colors = sectionColors[section]!;
+
+    if (sectionData.isEmpty) {
+      return Center(
+        child: Text(
+          'No ${section} available',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.grey[600],
+          ),
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 15),
+      children: sectionData.map((daily) {
+        return _buildResourceCard(
+          daily,
+          colors['bg']!,
+          colors['accent']!,
+          () => _navigateToDetailPage(context, daily, colors['accent']!),
+        );
+      }).toList(),
     );
   }
 

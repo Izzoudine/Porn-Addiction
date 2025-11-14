@@ -16,12 +16,24 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.example.purity_path/accessibility"
+    private val SESSION_CHANNEL = "com.example.purity_path/session"
     private val NOTIFICATION_PERMISSION_REQUEST_CODE = 100
     private val OVERLAY_PERMISSION_REQUEST_CODE = 1001
     private val VPN_PERMISSION_REQUEST_CODE = 1002 // Added
+    
+    companion object {
+        var methodChannel: MethodChannel? = null
+    }
 
     override fun configureFlutterEngine(flutterEngine: io.flutter.embedding.engine.FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        
+        // Start the monitoring service when app launches
+        startMonitoringService()
+        
+        // Setup session channel for accessibility service communication
+        methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SESSION_CHANNEL)
+        
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 
@@ -76,7 +88,20 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    
+    private fun startMonitoringService() {
+        try {
+            val serviceIntent = Intent(this, AccessibilityMonitorService::class.java)
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+        } catch (e: Exception) {
+            // Log error but don't crash the app
+            android.util.Log.e("MainActivity", "Failed to start monitoring service: ${e.message}")
+        }
+    }
 
     private fun requestOverlayPermission(result: MethodChannel.Result) {
         try {

@@ -317,65 +317,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),               
                     const SizedBox(height: 24),
 
-                    // Liste des options
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          _buildOptionItem(
-                            icon: Icons.language_outlined,
-                            title: "App Language",
-                            subtitle: "Choose your preferred language",
-                            onTap: () {
-                              // Action pour changer la langue
-                            },
-                          ),
-                            const Divider(height: 1),
-                          _buildOptionItem(
-                            icon: Icons.security_outlined,
-                            title: "Privacy Settings",
-                            subtitle: "Manage app permissions",
-                            onTap: () {
-                              // Action pour changer la langue
-                            },
-                          ),
-                          const Divider(height: 1),
-                          _buildOptionItem(
-                            icon: Icons.help_outline,
-                            title: "Support & Guidance",
-                            subtitle: "Get help or contact our team",
-
-                            onTap: () {
-                              // Action pour l'aide
-                            },
-                          ),
-                          const Divider(height: 1),
-                          _buildOptionItem(
-                            icon: Icons.info_outline,
-                            title: "About Purity Path",
-                            subtitle: "Learn about our mission",
-                            onTap: () {
-                              // Action pour à propos
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // Bouton de déconnexion
+                    // Log Out Button (only option on profile)
                     if (!_isGuest)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -386,8 +328,6 @@ class _ProfilePageState extends State<ProfilePage> {
                               context,
                               RoutesName.welcome,
                             );
-
-                            // Optionally: Navigator.pop(context); or other logic
                           },
                           icon: const Icon(Icons.logout),
                           label: const Text("Log Out"),
