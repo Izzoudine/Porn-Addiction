@@ -10,11 +10,14 @@ class SessionMonitorService {
 
   /// Initialize the session monitor service
   static Future<void> initialize() async {
-    if (_isInitialized) return;
+    if (_isInitialized) {
+      print('⚠️ SessionMonitorService already initialized');
+      return;
+    }
 
     platform.setMethodCallHandler(_handleMethodCall);
     _isInitialized = true;
-    print('SessionMonitorService initialized');
+    print('✅ SessionMonitorService initialized and handler set for channel: com.example.purity_path/session');
   }
 
   /// Handle method calls from native (Kotlin)
@@ -33,11 +36,43 @@ class SessionMonitorService {
         final durationSeconds = args['durationSeconds'] as int;
         return await _handleCheckLimits(durationSeconds);
 
+      case 'getPhaseTimeLimit':
+        return await _getPhaseTimeLimit();
+
       default:
         throw PlatformException(
           code: 'NOT_IMPLEMENTED',
           message: 'Method ${call.method} not implemented',
         );
+    }
+  }
+
+  /// Get current phase time limit in minutes
+  static Future<int> _getPhaseTimeLimit() async {
+    try {
+      // Load all phases to see what's stored
+      final prefs = await SharedPreferences.getInstance();
+      final phasesString = prefs.getString('reduction_phases');
+      final currentIndex = prefs.getInt('current_phase_index') ?? 0;
+      
+      print('📦 Raw phases data from storage:');
+      print('   Phases JSON length: ${phasesString?.length ?? 0}');
+      print('   Current phase index: $currentIndex');
+      
+      final currentPhase = await PhaseManager.getCurrentPhase();
+      if (currentPhase == null || currentPhase.durationLimit == null) {
+        print('⚠️ No current phase or duration limit found - using default 5 minutes');
+        return 5; // Default 5 minutes
+      }
+      print('✅ Current Phase Info:');
+      print('   Phase #${currentPhase.phaseNumber} - ${currentPhase.phaseType}');
+      print('   Duration Limit: ${currentPhase.durationLimit} minutes per session');
+      print('   Frequency Limit: ${currentPhase.frequencyLimit} times per week');
+      print('   Description: ${currentPhase.description}');
+      return currentPhase.durationLimit!;
+    } catch (e) {
+      print('❌ Error getting phase time limit: $e');
+      return 5; // Default fallback
     }
   }
 

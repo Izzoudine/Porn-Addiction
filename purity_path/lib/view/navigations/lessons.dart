@@ -31,14 +31,11 @@ class _LessonsScreenState extends State<Lessons>
       _isLoading = true;
     });
     
-    // Try to get data synchronously first
-    _dailies = DailiesManager.getAllDailiesSync();
+    // Always load from SharedPreferences first to populate _allDailies
+    await DailiesManager.loadDailies();
     
-    // If empty, load from SharedPreferences
-    if (_dailies.isEmpty) {
-      await DailiesManager.loadDailies();
-      _dailies = DailiesManager.getAllDailiesSync();
-    }
+    // Then get the data synchronously
+    _dailies = DailiesManager.getAllDailiesSync();
     
     setState(() {
       _isLoading = false;

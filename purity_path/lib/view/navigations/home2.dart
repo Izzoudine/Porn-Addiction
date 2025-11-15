@@ -103,6 +103,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
 
   Future<void> _loadCurrentPhase() async {
     final phase = await PhaseManager.getCurrentPhase();
+    print('🏠 HOME PAGE: Loaded phase #${phase?.phaseNumber}, durationLimit=${phase?.durationLimit} minutes');
     if (mounted) {
       setState(() {
         _currentPhase = phase;

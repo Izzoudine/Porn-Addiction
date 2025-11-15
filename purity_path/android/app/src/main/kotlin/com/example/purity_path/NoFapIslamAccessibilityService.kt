@@ -26,14 +26,25 @@ class NoFapIslamAccessibilityService : AccessibilityService() {
     
     companion object {
         private const val TAG = "NoFapAccessibilityService"
-        private const val SCAN_DEBOUNCE_DELAY = 500L // ms
-        private const val MAX_SCAN_DEPTH = 10
+        private const val SCAN_DEBOUNCE_DELAY = 500L // Reduced to 500ms for faster response
+        private const val MAX_SCAN_DEPTH = 5 // Reduced depth to prevent deep recursion
         private const val CHANNEL = "com.example.purity_path/session"
+        private const val MIN_EVENT_INTERVAL = 1000L // Minimum 1 second between event processing
     }
     
     private var methodChannel: MethodChannel? = null
     private var isTrackingSession = false
     private var sessionStartTime: Long = 0
+    private var timerDelayRunnable: Runnable? = null
+    private val TIMER_DELAY_MS = 60000L // 1 minute delay before showing timer
+    private var lastEventTime: Long = 0 // Track last event processing time
+    private var isProcessingEvent = false // Prevent concurrent processing
+    private var phaseTimeLimitMinutes: Int = 0 // Time limit from phase in minutes
+    private var isBlocked24Hours = false // Track if currently in 24-hour block
+    private var blockEndTime: Long = 0 // When the 24-hour block ends
+    private var accumulatedTimeSeconds: Int = 0 // Total time spent watching (persisted across sessions)
+    private var currentSessionPauseTime: Long = 0 // When current session was paused
+    private var hasStartedJourney: Boolean = false // Track if user has started their recovery journey
     
     // Enhanced keyword detection with regex patterns
 private val adultPatterns = listOf(
@@ -79,6 +90,12 @@ private val adultPatterns = listOf(
         super.onServiceConnected()
         Log.d(TAG, "Accessibility Service connected")
         
+        // Load persisted state
+        loadPersistedState()
+        
+        // Check if journey has started
+        checkJourneyStatus()
+        
         // Start the monitoring foreground service to keep this service alive
         try {
             val intent = Intent(this, AccessibilityMonitorService::class.java)
@@ -93,47 +110,103 @@ private val adultPatterns = listOf(
     }
     
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        // Throttle events to prevent overload
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastEventTime < MIN_EVENT_INTERVAL) {
+            return // Skip this event if too soon
+        }
+        
+        // Prevent concurrent event processing
+        if (isProcessingEvent) {
+            return
+        }
+        
         event?.let { accessibilityEvent ->
-            val packageName = accessibilityEvent.packageName?.toString()
-            
+            try {
+                val packageName = accessibilityEvent.packageName?.toString() ?: return
+                
             // Skip if package is whitelisted
             if (packageName in whitelistedPackages) {
-                // If we were tracking, stop tracking since user left adult content
-                if (isTrackingSession) {
-                    endTrackingSession()
-                }
+                // Don't end session when returning to our own app
+                // The timer should keep running
                 return
             }
             
-            // Check for blocked apps or adult content
-            val isAdultContent = packageName in blockedPackages
-            
-            if (!isAdultContent) {
-                // Debounce content scanning to avoid excessive processing
-                scanRunnable?.let { handler.removeCallbacks(it) }
-                scanRunnable = Runnable {
-                    serviceScope.launch {
-                        withContext(Dispatchers.Default) {
-                            val detected = scanForAdultContent(rootInActiveWindow, 0)
-                            withContext(Dispatchers.Main) {
-                                if (detected) {
-                                    handleAdultContentDetected()
-                                } else if (isTrackingSession) {
-                                    // Adult content not detected anymore, stop tracking
-                                    endTrackingSession()
+                // If user switched to a non-adult app, end session immediately
+                if (isTrackingSession && packageName !in blockedPackages) {
+                    // Cancel any pending scans
+                    scanRunnable?.let { handler.removeCallbacks(it) }
+                    
+                    // Quick check: is this still adult content?
+                    val isAdultContent = packageName in blockedPackages
+                    if (!isAdultContent) {
+                        // User left adult content - stop tracking immediately
+                        endTrackingSession()
+                        return
+                    }
+                }
+                
+                // Update last event time
+                lastEventTime = currentTime
+                
+                // Check for blocked apps or adult content
+                val isAdultContent = packageName in blockedPackages
+                
+                if (!isAdultContent) {
+                    // Debounce content scanning to avoid excessive processing
+                    scanRunnable?.let { handler.removeCallbacks(it) }
+                    scanRunnable = Runnable {
+                        isProcessingEvent = true
+                        serviceScope.launch {
+                            try {
+                                withContext(Dispatchers.Default) {
+                                    val detected = scanForAdultContent(rootInActiveWindow, 0)
+                                    withContext(Dispatchers.Main) {
+                                        if (detected) {
+                                            handleAdultContentDetected()
+                                        } else if (isTrackingSession) {
+                                            // Adult content not detected anymore, stop tracking
+                                            endTrackingSession()
+                                        }
+                                    }
                                 }
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Error during content scan: ${e.message}")
+                            } finally {
+                                isProcessingEvent = false
                             }
                         }
                     }
+                    handler.postDelayed(scanRunnable!!, SCAN_DEBOUNCE_DELAY)
+                } else {
+                    handleAdultContentDetected()
                 }
-                handler.postDelayed(scanRunnable!!, SCAN_DEBOUNCE_DELAY)
-            } else {
-                handleAdultContentDetected()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error processing accessibility event: ${e.message}")
+                isProcessingEvent = false
             }
         }
     }
     
     private fun handleAdultContentDetected() {
+        // Check if we're in 24-hour block period
+        if (isBlocked24Hours) {
+            val remainingBlockTime = blockEndTime - System.currentTimeMillis()
+            if (remainingBlockTime > 0) {
+                val hoursRemaining = (remainingBlockTime / (1000 * 60 * 60)).toInt()
+                val minutesRemaining = ((remainingBlockTime / (1000 * 60)) % 60).toInt()
+                showBlockingOverlay(
+                    "24-Hour Block Active", 
+                    "Access blocked for $hoursRemaining hours and $minutesRemaining minutes. Come back tomorrow!"
+                )
+                return
+            } else {
+                // Block period ended
+                isBlocked24Hours = false
+                blockEndTime = 0
+            }
+        }
+        
         if (!isTrackingSession) {
             // Start tracking session
             startTrackingSession()
@@ -145,12 +218,62 @@ private val adultPatterns = listOf(
     
     private fun startTrackingSession() {
         isTrackingSession = true
-        sessionStartTime = System.currentTimeMillis()
         
-        // Show timer overlay
-        showTimerOverlay()
+        // If resuming (accumulated time exists), don't reset session start time
+        if (accumulatedTimeSeconds == 0) {
+            sessionStartTime = System.currentTimeMillis()
+            Log.d(TAG, "Starting NEW tracking session - timer scheduled for 1 minute")
+            
+            // Schedule timer to show after 1 minute (grace period)
+            timerDelayRunnable = Runnable {
+                if (isTrackingSession) {
+                    // Don't count the grace period toward accumulated time
+                    // Reset session start to NOW so timer shows full allowed time
+                    sessionStartTime = System.currentTimeMillis()
+                    accumulatedTimeSeconds = 0
+                    Log.d(TAG, "1 minute grace period passed - resetting timer to show FULL allowed time")
+                    showTimerOverlay()
+                } else {
+                    Log.d(TAG, "1 minute passed but session already ended - not showing timer")
+                }
+            }
+            handler.postDelayed(timerDelayRunnable!!, TIMER_DELAY_MS)
+        } else {
+            // Resuming from pause - adjust session start time based on accumulated time
+            sessionStartTime = System.currentTimeMillis() - (accumulatedTimeSeconds * 1000L)
+            Log.d(TAG, "RESUMING tracking session - accumulated time: ${accumulatedTimeSeconds}s")
+            
+            // Show timer IMMEDIATELY when resuming (no grace period)
+            showTimerOverlay()
+        }
         
-        // Notify Flutter to start session tracking
+        Log.d(TAG, "Tracking session active - accumulated: ${accumulatedTimeSeconds}s")
+        
+        // Get phase limit from Flutter
+        handler.post {
+            try {
+                MainActivity.methodChannel?.invokeMethod("getPhaseTimeLimit", null,
+                    object : MethodChannel.Result {
+                        override fun success(result: Any?) {
+                            phaseTimeLimitMinutes = (result as? Int) ?: 5 // Default 5 minutes
+                            Log.d(TAG, "Phase time limit received: $phaseTimeLimitMinutes minutes")
+                        }
+                        override fun error(p0: String, p1: String?, p2: Any?) {
+                            phaseTimeLimitMinutes = 5 // Default fallback
+                            Log.e(TAG, "Error getting phase limit: $p1")
+                        }
+                        override fun notImplemented() {
+                            phaseTimeLimitMinutes = 5 // Default fallback
+                            Log.e(TAG, "getPhaseTimeLimit not implemented")
+                        }
+                    })
+            } catch (e: Exception) {
+                Log.e(TAG, "Error getting phase limit: ${e.message}")
+                phaseTimeLimitMinutes = 5 // Default fallback
+            }
+        }
+        
+        // Notify Flutter to start session tracking (for voice intervention)
         handler.post {
             try {
                 MainActivity.methodChannel?.invokeMethod("startSession", null)
@@ -196,19 +319,37 @@ private val adultPatterns = listOf(
     private fun endTrackingSession() {
         if (!isTrackingSession) return
         
-        isTrackingSession = false
-        sessionStartTime = 0
+        Log.d(TAG, "Pausing tracking session (user left adult content)")
         
-        // Stop and remove timer overlay
+        // Calculate current accumulated time
+        val elapsedThisSession = (System.currentTimeMillis() - sessionStartTime) / 1000
+        accumulatedTimeSeconds = maxOf(0, elapsedThisSession.toInt())
+        currentSessionPauseTime = System.currentTimeMillis()
+        
+        // Save state to persist across app restarts
+        savePersistedState()
+        
+        Log.d(TAG, "Session paused - Total accumulated time: ${accumulatedTimeSeconds}s")
+        
+        isTrackingSession = false
+        
+        // Cancel pending timer display
+        timerDelayRunnable?.let { 
+            handler.removeCallbacks(it)
+            Log.d(TAG, "Cancelled pending timer display")
+        }
+        timerDelayRunnable = null
+        
+        // Stop timer updates and REMOVE the overlay completely
         stopTimerOverlay()
         
-        // Notify Flutter to end session
+        // Notify Flutter session paused (not ended)
         handler.post {
             try {
                 MainActivity.methodChannel?.invokeMethod("endSession", null)
-                Log.d(TAG, "Session tracking ended")
+                Log.d(TAG, "Session paused notification sent")
             } catch (e: Exception) {
-                Log.e(TAG, "Error ending session: ${e.message}")
+                Log.e(TAG, "Error notifying session pause: ${e.message}")
             }
         }
     }
@@ -222,7 +363,7 @@ private val adultPatterns = listOf(
             val contentDescription = node.contentDescription?.toString()
             
             if (containsAdultContent(text) || containsAdultContent(contentDescription)) {
-                Log.d(TAG, "Adult content detected: ${text ?: contentDescription}")
+                Log.d(TAG, "Adult content detected")
                 return true
             }
             
@@ -230,15 +371,26 @@ private val adultPatterns = listOf(
             if (node.className == "android.webkit.WebView") {
                 val url = node.text?.toString() ?: node.contentDescription?.toString()
                 if (url != null && containsAdultContent(url)) {
-                    Log.d(TAG, "Adult URL detected: $url")
+                    Log.d(TAG, "Adult URL detected")
                     return true
                 }
             }
             
+            // Limit number of children to scan to prevent excessive memory usage
+            val childCount = minOf(node.childCount, 20) // Max 20 children per node
+            
             // Recursively check children with depth limit
-            for (i in 0 until node.childCount) {
-                if (scanForAdultContent(node.getChild(i), depth + 1)) {
-                    return true
+            for (i in 0 until childCount) {
+                try {
+                    val child = node.getChild(i)
+                    if (child != null && scanForAdultContent(child, depth + 1)) {
+                        child.recycle() // Recycle to free memory
+                        return true
+                    }
+                    child?.recycle() // Always recycle to free memory
+                } catch (e: Exception) {
+                    // Continue with next child if one fails
+                    Log.e(TAG, "Error scanning child node: ${e.message}")
                 }
             }
         } catch (e: Exception) {
@@ -280,12 +432,10 @@ private val adultPatterns = listOf(
             windowManager.addView(overlayView, params)
             isOverlayShown = true
             
-            Log.d(TAG, "Blocking overlay shown")
+            Log.d(TAG, "Blocking overlay shown - persistent (24-hour block)")
             
-            // Auto-remove overlay after 30 seconds
-            handler.postDelayed({
-                removeOverlay()
-            }, 30000)
+            // Don't auto-remove the overlay during 24-hour block
+            // It will only be removed when user taps "Close" button
             
         } catch (e: Exception) {
             Log.e(TAG, "Error showing overlay: ${e.message}")
@@ -424,20 +574,56 @@ val reportButton = Button(this).apply {
         timerUpdateRunnable = object : Runnable {
             override fun run() {
                 if (isTrackingSession && timerTextView != null) {
-                    val elapsedMillis = System.currentTimeMillis() - sessionStartTime
-                    val elapsedSeconds = elapsedMillis / 1000
-                    val minutes = (elapsedSeconds / 60).toInt()
-                    val seconds = (elapsedSeconds % 60).toInt()
-                    val hours = minutes / 60
-                    val remainingMinutes = minutes % 60
+                    // Calculate total elapsed time including accumulated time from previous sessions
+                    val elapsedThisSession = (System.currentTimeMillis() - sessionStartTime) / 1000
+                    val totalElapsedSeconds = maxOf(0, elapsedThisSession.toInt())
                     
-                    val timeString = if (hours > 0) {
-                        String.format("%02d:%02d:%02d", hours, remainingMinutes, seconds)
+                    // Calculate remaining time from FULL phase limit
+                    val totalAllowedSeconds = phaseTimeLimitMinutes * 60
+                    val remainingSeconds = totalAllowedSeconds - totalElapsedSeconds
+                    
+                    Log.d(TAG, "Timer update - Phase limit: ${phaseTimeLimitMinutes}min, Total elapsed: ${totalElapsedSeconds}s, Remaining: ${remainingSeconds}s")
+                    
+                    if (remainingSeconds <= 0) {
+                        // Time's up! Activate 24-hour block
+                        timerTextView?.text = "⏱️ 00:00 - BLOCKED"
+                        timerTextView?.setTextColor(Color.RED)
+                        
+                        // Activate 24-hour block
+                        isBlocked24Hours = true
+                        blockEndTime = System.currentTimeMillis() + (24 * 60 * 60 * 1000) // 24 hours from now
+                        
+                        // Reset accumulated time since we're starting fresh 24-hour block
+                        accumulatedTimeSeconds = 0
+                        savePersistedState()
+                        
+                        // End current session and show block message
+                        handler.postDelayed({
+                            isTrackingSession = false
+                            stopTimerOverlay()
+                            showBlockingOverlay(
+                                "Time Limit Reached - 24 Hour Block", 
+                                "You've used all your allowed time. Adult content is now blocked for 24 hours. Use this time for recovery and reflection."
+                            )
+                        }, 2000) // Show "BLOCKED" for 2 seconds before showing overlay
+                        
+                        // Don't schedule next update - session will end
+                        return
                     } else {
-                        String.format("%02d:%02d", minutes, seconds)
+                        val remainingMinutes = remainingSeconds / 60
+                        val remainingSecs = remainingSeconds % 60
+                        val timeString = String.format("%02d:%02d", remainingMinutes, remainingSecs)
+                        
+                        // Change color based on remaining time
+                        val textColor = when {
+                            remainingMinutes < 1 -> Color.RED
+                            remainingMinutes < 2 -> Color.parseColor("#FFA500") // Orange
+                            else -> Color.WHITE
+                        }
+                        
+                        timerTextView?.setTextColor(textColor)
+                        timerTextView?.text = "⏱️ $timeString"
                     }
-                    
-                    timerTextView?.text = "⏱️ $timeString"
                     
                     // Schedule next update
                     handler.postDelayed(this, 1000) // Update every second
@@ -486,9 +672,98 @@ val reportButton = Button(this).apply {
     
     override fun onDestroy() {
         super.onDestroy()
-        removeOverlay()
-        stopTimerOverlay()
-        serviceScope.cancel()
-        scanRunnable?.let { handler.removeCallbacks(it) }
+        try {
+            // Save current state before destroying
+            if (isTrackingSession) {
+                val elapsedThisSession = (System.currentTimeMillis() - sessionStartTime) / 1000
+                accumulatedTimeSeconds = maxOf(0, elapsedThisSession.toInt())
+                savePersistedState()
+            }
+            
+            // Clean up all resources
+            removeOverlay()
+            stopTimerOverlay()
+            timerDelayRunnable?.let { handler.removeCallbacks(it) }
+            scanRunnable?.let { handler.removeCallbacks(it) }
+            timerUpdateRunnable?.let { handler.removeCallbacks(it) }
+            
+            // Cancel all coroutines
+            serviceScope.cancel()
+            
+            // Reset state
+            isTrackingSession = false
+            isProcessingEvent = false
+            
+            Log.d(TAG, "Service destroyed and cleaned up")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during cleanup: ${e.message}")
+        }
+    }
+    
+    private fun savePersistedState() {
+        try {
+            val prefs = getSharedPreferences("accessibility_timer_state", Context.MODE_PRIVATE)
+            prefs.edit().apply {
+                putInt("accumulated_time_seconds", accumulatedTimeSeconds)
+                putLong("block_end_time", blockEndTime)
+                putBoolean("is_blocked_24_hours", isBlocked24Hours)
+                putLong("last_save_time", System.currentTimeMillis())
+                apply()
+            }
+            Log.d(TAG, "State saved: accumulated=${accumulatedTimeSeconds}s, blocked=$isBlocked24Hours")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error saving state: ${e.message}")
+        }
+    }
+    
+    private fun loadPersistedState() {
+        try {
+            val prefs = getSharedPreferences("accessibility_timer_state", Context.MODE_PRIVATE)
+            accumulatedTimeSeconds = prefs.getInt("accumulated_time_seconds", 0)
+            blockEndTime = prefs.getLong("block_end_time", 0)
+            isBlocked24Hours = prefs.getBoolean("is_blocked_24_hours", false)
+            val lastSaveTime = prefs.getLong("last_save_time", 0)
+            
+            // Check if 24-hour block has expired
+            if (isBlocked24Hours && blockEndTime > 0) {
+                val remainingBlockTime = blockEndTime - System.currentTimeMillis()
+                if (remainingBlockTime <= 0) {
+                    // Block expired, reset everything
+                    isBlocked24Hours = false
+                    blockEndTime = 0
+                    accumulatedTimeSeconds = 0
+                    savePersistedState()
+                    Log.d(TAG, "24-hour block expired - state reset")
+                } else {
+                    Log.d(TAG, "24-hour block still active - ${remainingBlockTime / 1000 / 60 / 60} hours remaining")
+                }
+            }
+            
+            Log.d(TAG, "State loaded: accumulated=${accumulatedTimeSeconds}s, blocked=$isBlocked24Hours")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error loading state: ${e.message}")
+        }
+    }
+    
+    private fun checkJourneyStatus() {
+        try {
+            val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+            
+            // Log all keys to debug
+            val allKeys = prefs.all.keys
+            Log.d(TAG, "All SharedPreferences keys: $allKeys")
+            
+            hasStartedJourney = prefs.getBoolean("flutter.hasStartedJourney", false)
+            Log.d(TAG, "Journey status check: key='flutter.hasStartedJourney', value=$hasStartedJourney")
+            
+            if (hasStartedJourney) {
+                Log.d(TAG, "✅ Journey has been STARTED")
+            } else {
+                Log.w(TAG, "⚠️ Journey NOT started - functionality disabled")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking journey status: ${e.message}")
+            hasStartedJourney = false
+        }
     }
 }

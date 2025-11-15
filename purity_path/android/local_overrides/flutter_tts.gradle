@@ -1,0 +1,19 @@
+// Override for flutter_tts plugin to fix JVM target compatibility
+afterEvaluate { project ->
+    if (project.name == 'flutter_tts') {
+        // Fix JVM target compatibility to Java 11
+        project.android {
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_11
+                targetCompatibility JavaVersion.VERSION_11
+            }
+        }
+        
+        // Fix Kotlin JVM target to 11
+        project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+            kotlinOptions {
+                jvmTarget = "11"
+            }
+        }
+    }
+}

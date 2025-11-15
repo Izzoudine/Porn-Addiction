@@ -9,7 +9,7 @@ class GeminiAIService {
     'AIzaSyAFAJdzfIT13bsyfQBBba_itkU33HSscN8',
   ];
   static int _currentKeyIndex = 0;
-  static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+  static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
   /// Get AI response for recovery support
   /// 
